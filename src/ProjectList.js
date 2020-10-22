@@ -1,9 +1,10 @@
 import React from 'react';
 import web3 from './contracts/web3'
 import ProjectInstance from './contracts/ProjectInstance';
-import {Card, CardContent, CardActions, Typography, TextField, Button} from '@material-ui/core';
-var months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sept", "Oct", "Nov", "Dec"];
-var states = ["Fundraising", "Completed", "Expired"]
+import {Box, Grid, Card, CardContent, CardActions, Typography, TextField, Button, Paper, Chip, LinearProgress} from '@material-ui/core';
+const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sept", "Oct", "Nov", "Dec"];
+const states = ["Fundraising", "Completed", "Expired"]
+const StateColors = ["primary", "default", "secondary"]
 class ProjectList extends React.Component{
   constructor(props){
     super(props)
@@ -53,13 +54,33 @@ class ProjectList extends React.Component{
         const month = months[this.state.projects[index].deadline.getMonth()]
         const year = this.state.projects[index].deadline.getFullYear().toString()
         const date = day + " " + month + " " + year
+        var progress = (project.currentBalance/project.goal) * 100
+        if(progress > 100){
+          progress = 100
+        }
+        if(project.state === "2"){
+          progress = 0
+        }
         return(
-          <Card variant="outlined" key={index}>
+          <Grid  item xs = {12} > 
+          <Paper elevation = {2} >
+          <Card elevation ={2} variant="outlined" key={index} style={{padding:"20px",boxShadow: "0px 50px 80px 0px rgba(15,19,25,0.1)"}}>
             <CardContent>
-              <Typography variant = "h4">{project.title}</Typography>
-              <Typography variant = "body1">{project.desc}</Typography>
-              <Typography variant = "body1">state: {states[parseInt(project.state)]}   deadline: {date} </Typography>
-              <Typography >{project.currentBalance} ether : {project.goal} ether</Typography>
+              <Chip label={states[project.state]} color={StateColors[project.state]} />
+              <Typography style={{float:"right"}}>Deadline: {date} </Typography>
+              <center><Typography variant = "h4">{project.title}</Typography></center>
+              <Typography variant = "body1" style={{marginTop:"2%", marginBottom:"2%"}} >{project.desc}</Typography>
+              <Box display="flex" alignItems="center">
+                <Box minWidth={25}>
+                  <Typography variant="body2" color="textSecondary">{project.currentBalance} ETH</Typography>
+                </Box>
+                <Box width="100%" mr={2}>
+                  <LinearProgress style={{height:10, borderRadius:2}} variant="determinate" value={progress} />
+                </Box>
+                <Box minWidth={25}>
+                  <Typography variant="body2" color="textSecondary">{project.goal} ETH</Typography>
+                </Box>
+              </Box>
             </CardContent>
             <CardActions>
               <TextField  name = "fundingAmount" label="Amount" value={project.fundingAmt} onChange = {(e)=>{this.handleFundChange(index,e)}}/>
@@ -67,6 +88,8 @@ class ProjectList extends React.Component{
               {(project.state !== "0") && <Button disabled size="small" color="secondary" variant="contained" onClick={()=>{this.handleFund(project.address,index)}} >Fund</Button>}
             </CardActions>
           </Card>
+          </Paper>
+          </Grid>
         )
       })}
     </>

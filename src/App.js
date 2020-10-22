@@ -4,6 +4,8 @@ import CrowdFundInstance from './contracts/CrowdFundInstance';
 import ProjectInstance from './contracts/ProjectInstance';
 import ProjectList from './ProjectList';
 import ProjectForm from './ProjectForm';
+import {Grid, CircularProgress} from '@material-ui/core';
+import './App.css'
 class App extends React.Component{
   constructor(){
     super()
@@ -78,16 +80,19 @@ class App extends React.Component{
   
   render(){
     if(this.state.loading ){
-      return(<h1>loading</h1>)
+      return(
+      <center><CircularProgress size={100} style={{marginTop:50}}/></center>
+      )
     }
     return(
-      <>
-        <h1>Projects</h1>
-        <ProjectForm address = {this.state.address} CreateProject = {this.CreateProject}/>
-        <ProjectList address = {this.state.address} projects = {this.state.projects}/>
-        <>
-        </>
-      </>
+      <Grid container spacing={5} className="divJumbotron" style={{paddingTop:"25%"}} >
+        <Grid item xs = {12} >
+          <center><ProjectForm address = {this.state.address} CreateProject = {this.CreateProject}/></center>
+        </Grid>
+        <Grid container item xs = {12} spacing={5} style={{marginLeft:"15%", marginRight:"15%"}}>
+          <ProjectList address = {this.state.address} projects = {this.state.projects}/>
+        </Grid>
+      </Grid>
     )
   }
 
