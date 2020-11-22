@@ -2,6 +2,6 @@
     background-image: url('./jumbotron.jpeg')!important;
     background-repeat: no-repeat;
     background-blend-mode: overlay;
-    background-size: 100% 90%;
+    background-size: 100% 100%;
     height: 80vh;
 }

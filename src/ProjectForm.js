@@ -9,6 +9,7 @@ class App extends React.Component{
       Desc:"",
       Goal: 0,
       Deadline: "",
+      Checkpoints:0,
       DialogOpen: false,
     }
     this.handleChange = this.handleChange.bind(this);
@@ -42,13 +43,14 @@ class App extends React.Component{
         <DialogTitle id="form-dialog-title">Start New Project</DialogTitle>
         <form onSubmit={(event)=>{
             event.preventDefault();
-            const data = {Title :this.state.Title, Desc:this.state.Desc, Goal:this.state.Goal, Deadline:this.state.Deadline};
+            const data = {Title :this.state.Title, Desc:this.state.Desc, Goal:this.state.Goal, Deadline:this.state.Deadline, Checkpoints:this.state.Checkpoints};
             this.props.CreateProject(data)}} noValidate autoComplete="off">
         <DialogContent>
           <TextField  fullWidth name = "Title" label="Title" value={this.state.Title} onChange = {this.handleChange}/><br/><br/>
           <TextField  fullWidth name = "Desc" label="Description" value={this.state.Desc} onChange = {this.handleChange}/><br/><br/>
           <TextField  fullWidth name = "Goal" label="Target Amount" value={this.state.Goal} onChange = {this.handleChange}/><br/><br/>
-          <TextField  fullWidth name = "Deadline" label="Deadline" value={this.state.Deadline} onChange = {this.handleChange}/><br/>
+          <TextField  fullWidth name = "Deadline" label="Deadline" value={this.state.Deadline} onChange = {this.handleChange}/><br/><br/>
+          <TextField  fullWidth name = "Checkpoints" label="Checkpoints" value={this.state.Checkpoints} onChange = {this.handleChange}/><br/>
         </DialogContent>
         <DialogActions>
           <Button onClick={this.handleClose} color="primary">

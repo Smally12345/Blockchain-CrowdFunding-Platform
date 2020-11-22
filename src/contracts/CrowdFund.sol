@@ -10,11 +10,12 @@ contract CrowdFund{
         string projectTitle,
         string projectDesc,
         uint256 deadline,
-        uint256 goal
+        uint256 goal,
+        uint256 TotalCheckpoints
     );
-    function startProject(string calldata title, string calldata desc, uint goal, uint deadlineInDays) external {
+    function startProject(string calldata title, string calldata desc, uint goal, uint deadlineInDays, uint TotalCheckpoints) external {
         uint deadline = now.add(deadlineInDays.mul(1 days));
-        Project project = new Project(title, desc, goal, deadline, msg.sender);
+        Project project = new Project(title, desc, goal, deadline, msg.sender, TotalCheckpoints);
         projects.push(project);
         emit ProjectStarted(
             address(project),
@@ -22,7 +23,8 @@ contract CrowdFund{
             title,
             desc,
             deadline,
-            goal
+            goal,
+            TotalCheckpoints
         );
     }
     function returnAllProjects() external view returns(Project[] memory){

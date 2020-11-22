@@ -5,7 +5,7 @@ import {Box, Grid, Card, CardContent, CardActions, Typography, TextField, Button
 const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sept", "Oct", "Nov", "Dec"];
 const states = ["Fundraising", "Fundsraised", "Completed"]
 const StateColors = ["primary", "secondary","default"]
-class ProjectList extends React.Component{
+class ProjectFundedList extends React.Component{
   constructor(props){
     super(props)
     this.state ={
@@ -95,4 +95,4 @@ class ProjectList extends React.Component{
   }
 
 }
-export default ProjectList;
+export default ProjectFundedList;

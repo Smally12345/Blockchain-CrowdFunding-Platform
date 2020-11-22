@@ -5,12 +5,19 @@ contract Project{
     using SafeMath for uint256;
     enum State {
         fundraising,
+        fundsraised,
         complete,
         expired
     }
     
     event Fund(
         uint CurrentBalance,
+        State state
+    );
+    
+    event Checkpoint(
+        uint paid,
+        uint CompletedCheckpoints,
         State state
     );
     string public title;
@@ -21,16 +28,24 @@ contract Project{
     address payable public creator;
     State public state = State.fundraising;
     mapping(address => uint256) public contributions;
-    constructor(string memory _title, string memory _desc, uint _goal, uint _deadline, address payable _creator) public {
+    uint public TotalCheckpoints;
+    uint public CompletedCheckpoints;
+    uint public paid;
+    uint public toPay;
+    constructor(string memory _title, string memory _desc, uint _goal, uint _deadline, address payable _creator, uint _totalCP) public {
         title = _title;
         desc = _desc;
         deadline = _deadline;
         goal = _goal;
         creator = _creator;
         currentbalance = 0;
+        paid = 0;
+        toPay = 0;
+        CompletedCheckpoints = 0;
+        TotalCheckpoints = _totalCP;
     }
     
-    function getDetails() external view returns(address payable Creator, string memory ProjectTitle, string memory ProjectDesc, uint AmountGoal, uint Deadline, uint CurrentBal, State CurrentState){
+    function getDetails() external view returns(address payable Creator, string memory ProjectTitle, string memory ProjectDesc, uint AmountGoal, uint Deadline, uint CurrentBal, State CurrentState, uint total_checkpoints, uint completed_checkpoints, uint Paid){
         Creator = creator;
         ProjectTitle = title;
         ProjectDesc = desc;
@@ -39,6 +54,9 @@ contract Project{
         Creator = creator;
         CurrentBal = currentbalance;
         CurrentState = state;
+        total_checkpoints = TotalCheckpoints;
+        completed_checkpoints = CompletedCheckpoints;
+        Paid = paid;
     }
     
     function contribute() external payable {
@@ -46,9 +64,9 @@ contract Project{
         contributions[msg.sender] = contributions[msg.sender].add(msg.value);
         currentbalance = currentbalance.add(msg.value);
         if(currentbalance >= goal){
-            if(payout()){
-                state = State.complete;
-            }
+            toPay = currentbalance.div(TotalCheckpoints);
+            completeCheckpoints();
+            state = State.fundsraised;
         }
         emit Fund(
             currentbalance,
@@ -56,10 +74,26 @@ contract Project{
         );
         
     }
-    function payout() private returns(bool){
-        if(creator.send(currentbalance)){
+    
+    function payout(uint installment) private returns(bool){
+        if(creator.send(installment)){
+            paid = paid.add(installment);
             return true;
         }
         return false;
+    }
+    
+    function completeCheckpoints() public{
+        CompletedCheckpoints = CompletedCheckpoints.add(1);
+        if(payout(toPay)){
+           if(CompletedCheckpoints == TotalCheckpoints){
+               state = State.complete;
+           }
+        }
+        emit Checkpoint(
+            paid,
+            CompletedCheckpoints,
+            state
+        );
     }
 }

@@ -26,10 +26,40 @@ const abi = [
 				"internalType": "address payable",
 				"name": "_creator",
 				"type": "address"
+			},
+			{
+				"internalType": "uint256",
+				"name": "_totalCP",
+				"type": "uint256"
 			}
 		],
 		"stateMutability": "nonpayable",
 		"type": "constructor"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "paid",
+				"type": "uint256"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "CompletedCheckpoints",
+				"type": "uint256"
+			},
+			{
+				"indexed": false,
+				"internalType": "enum Project.State",
+				"name": "state",
+				"type": "uint8"
+			}
+		],
+		"name": "Checkpoint",
+		"type": "event"
 	},
 	{
 		"anonymous": false,
@@ -49,6 +79,39 @@ const abi = [
 		],
 		"name": "Fund",
 		"type": "event"
+	},
+	{
+		"inputs": [],
+		"name": "CompletedCheckpoints",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "TotalCheckpoints",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "completeCheckpoints",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
 	},
 	{
 		"inputs": [],
@@ -166,6 +229,21 @@ const abi = [
 				"internalType": "enum Project.State",
 				"name": "CurrentState",
 				"type": "uint8"
+			},
+			{
+				"internalType": "uint256",
+				"name": "total_checkpoints",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "completed_checkpoints",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "Paid",
+				"type": "uint256"
 			}
 		],
 		"stateMutability": "view",
@@ -174,6 +252,19 @@ const abi = [
 	{
 		"inputs": [],
 		"name": "goal",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "paid",
 		"outputs": [
 			{
 				"internalType": "uint256",
@@ -205,6 +296,19 @@ const abi = [
 				"internalType": "string",
 				"name": "",
 				"type": "string"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "toPay",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
 			}
 		],
 		"stateMutability": "view",

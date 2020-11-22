@@ -1,5 +1,5 @@
 import web3 from './web3';
-const address = "0xb1aA88AbC340CCD187ac7e7c813E384589a677cd";
+const address = "0x0c36E043dccFCF89313feA2141176d129e6aAaf7";
 const abi = [
 	{
 		"anonymous": false,
@@ -39,6 +39,12 @@ const abi = [
 				"internalType": "uint256",
 				"name": "goal",
 				"type": "uint256"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "TotalCheckpoints",
+				"type": "uint256"
 			}
 		],
 		"name": "ProjectStarted",
@@ -64,6 +70,11 @@ const abi = [
 			{
 				"internalType": "uint256",
 				"name": "deadlineInDays",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "TotalCheckpoints",
 				"type": "uint256"
 			}
 		],

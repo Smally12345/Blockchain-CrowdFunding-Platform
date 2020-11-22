@@ -1,0 +1,4 @@
+Voting system
+Deadline
+Rounding paid value
+responsive checkpoint and progress bar
