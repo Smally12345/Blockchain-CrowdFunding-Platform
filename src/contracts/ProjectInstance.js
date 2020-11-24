@@ -75,9 +75,53 @@ const abi = [
 				"internalType": "enum Project.State",
 				"name": "state",
 				"type": "uint8"
+			},
+			{
+				"indexed": false,
+				"internalType": "address[]",
+				"name": "backers",
+				"type": "address[]"
 			}
 		],
 		"name": "Fund",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": false,
+				"internalType": "bool",
+				"name": "votingState",
+				"type": "bool"
+			}
+		],
+		"name": "Trigger",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": false,
+				"internalType": "bool",
+				"name": "votingState",
+				"type": "bool"
+			},
+			{
+				"indexed": false,
+				"internalType": "bool[]",
+				"name": "HasVoted",
+				"type": "bool[]"
+			},
+			{
+				"indexed": false,
+				"internalType": "bool",
+				"name": "result",
+				"type": "bool"
+			}
+		],
+		"name": "VoteEvent",
 		"type": "event"
 	},
 	{
@@ -101,6 +145,43 @@ const abi = [
 				"internalType": "uint256",
 				"name": "",
 				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "bool",
+				"name": "choice",
+				"type": "bool"
+			},
+			{
+				"internalType": "uint256",
+				"name": "idx",
+				"type": "uint256"
+			}
+		],
+		"name": "Vote",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"name": "backers",
+		"outputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
 			}
 		],
 		"stateMutability": "view",
@@ -244,6 +325,34 @@ const abi = [
 				"internalType": "uint256",
 				"name": "Paid",
 				"type": "uint256"
+			},
+			{
+				"internalType": "address[]",
+				"name": "Backers",
+				"type": "address[]"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "getVoteDetails",
+		"outputs": [
+			{
+				"internalType": "bool",
+				"name": "votingState",
+				"type": "bool"
+			},
+			{
+				"internalType": "bool[]",
+				"name": "HasVoted",
+				"type": "bool[]"
+			},
+			{
+				"internalType": "bool",
+				"name": "result",
+				"type": "bool"
 			}
 		],
 		"stateMutability": "view",
@@ -309,6 +418,26 @@ const abi = [
 				"internalType": "uint256",
 				"name": "",
 				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "triggerVoting",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "voting",
+		"outputs": [
+			{
+				"internalType": "contract Voting",
+				"name": "",
+				"type": "address"
 			}
 		],
 		"stateMutability": "view",

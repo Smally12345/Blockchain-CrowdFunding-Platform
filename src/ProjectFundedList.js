@@ -1,7 +1,8 @@
 import React from 'react';
-import web3 from './contracts/web3'
 import ProjectInstance from './contracts/ProjectInstance';
-import {Box, Grid, Card, CardContent, CardActions, Typography, TextField, Button, Paper, Chip, LinearProgress} from '@material-ui/core';
+import CrowdFundInstance from './contracts/CrowdFundInstance';
+import {Box, Grid, Card, CardContent, CardActions, Typography, Button, Paper, Chip, LinearProgress, CircularProgress, FormControlLabel, FormGroup, Checkbox} from '@material-ui/core';
+import Checkpoints from './Checkpoints'
 const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sept", "Oct", "Nov", "Dec"];
 const states = ["Fundraising", "Fundsraised", "Completed"]
 const StateColors = ["primary", "secondary","default"]
@@ -9,24 +10,95 @@ class ProjectFundedList extends React.Component{
   constructor(props){
     super(props)
     this.state ={
+        loading : true,
         address : this.props.address,
-        projects: this.props.projects,
+        projects: [],
+        checkedY : [],
+        checkedN : [],
     }
   }
-  
-  handleFund(projectaddr, idx){
+
+  async load(){
+    const arr = await CrowdFundInstance.methods.returnAllProjects().call()
+    for(var i = 0; i < arr.length; i++){
+      const project = ProjectInstance(arr[i])
+      const data = await project.methods.getDetails().call()
+      var bindex = -1
+      for(var j = 0; j < data.Backers.length; j++){
+        if(data.Backers[j] === this.state.address){
+          bindex = j
+          break
+        }
+      }
+      if(bindex === -1){
+        continue
+      }
+      const votingData = await project.methods.getVoteDetails().call()
+      const projectdata = {
+        address : arr[i],
+        creator : data.Creator,
+        title : data.ProjectTitle,
+        desc : data.ProjectDesc,
+        goal : data.AmountGoal/ 10**18,
+        currentBalance : data.CurrentBal/ 10**18,
+        fundingAmt:0,
+        state :data.CurrentState,
+        deadline : new Date(data.Deadline * 1000),
+        totalCheckpoints : data.total_checkpoints,
+        completedCheckpoints : data.completed_checkpoints,
+        paid : data.Paid / 10**18,
+        backers : data.Backers,
+        votingState : votingData.votingState,
+        hasVoted: votingData.HasVoted,
+        votingResult : votingData.result,
+        bindex,
+      }
+      this.setState({
+        projects : [...this.state.projects, projectdata],
+        checkedY : [...this.state.checkedY, false],
+        checkedN : [...this.state.checkedN, false],
+      })
+    }
+    
+  }
+  componentDidMount(){
+      this.load().then(()=>{
+      this.setState({
+        loading:false
+      })
+    })
+  }
+
+  handleVote(idx, projectaddr){
       const project = ProjectInstance(projectaddr)
-      project.methods.contribute().send({
+      var choice;
+      if(this.state.checkedY[idx] && !this.state.checkedN[idx]){
+        choice = true
+      }
+      else if(this.state.checkedN[idx] && !this.state.checkedY[idx]){
+        choice = false
+      }
+      else{
+        alert("Choose one option")
+        return;
+      }
+
+      project.methods.Vote(choice, this.state.projects[idx].bindex).send({
         from: this.state.address,
-        value: web3.utils.toWei(this.state.projects[idx].fundingAmt.toString(), 'ether')
       }).then((res)=>{
-        alert("success")
+        alert("vote success")
         let projects = [...this.state.projects]
         let project = {...this.state.projects[idx]}
-        const data = res.events.Fund.returnValues;
-        project.currentBalance = data.CurrentBalance / 10**18
-        project.state = data.state
-        project.fundingAmt = "0"
+        const data = res.events.VoteEvent.returnValues;
+        project.votingState = data.votingState
+        project.hasVoted = data.HasVoted
+        project.votingResult = data.result
+        if(project.votingState === false && project.votingResult === true){
+          const checkpointdata = res.events.Checkpoint.returnValues;
+          project.paid = checkpointdata.paid/ 10**18
+          project.completedCheckpoints = checkpointdata.CompletedCheckpoints
+          project.state = checkpointdata.state
+        }
         projects[idx] = project
         this.setState({
           projects
@@ -35,30 +107,45 @@ class ProjectFundedList extends React.Component{
         alert(err)
       })
   }
-  handleFundChange(idx, e){
 
-    let projects = [...this.state.projects]
-    let project = {...this.state.projects[idx]}
-    project.fundingAmt = e.target.value
-    projects[idx] = project
-    this.setState({
-      projects
-    })
+  handleChange = (idx, e) => {
+    if (e.target.name === "checkedY"){
+      let checkedY = [...this.state.checkedY]
+      checkedY[idx] = e.target.checked
+      this.setState({
+        checkedY
+      })
+    }
+    else{
+      let checkedN = [...this.state.checkedN]
+      checkedN[idx] = e.target.checked
+      this.setState({
+        checkedN
+      })
+    }
+    
   }
   
   render(){
- 
+    if(this.state.loading ){
+      return(
+        <center><CircularProgress size={50} style={{marginTop:50}}/></center>
+      )
+    }
     return(
       <>{this.state.projects.map((project,index) => {
         const day = this.state.projects[index].deadline.getDate().toString()
         const month = months[this.state.projects[index].deadline.getMonth()]
         const year = this.state.projects[index].deadline.getFullYear().toString()
         const date = day + " " + month + " " + year
-        var progress = (project.currentBalance/project.goal) * 100
+        var progress = (project.paid/project.currentBalance) * 100
         if(progress > 100){
           progress = 100
         }
-        
+        if(project.state === "0"){
+          progress = 0
+        }
+
         return(
           <Grid  item xs = {12} > 
           <Paper elevation = {2} >
@@ -70,20 +157,24 @@ class ProjectFundedList extends React.Component{
               <Typography variant = "body1" style={{marginTop:"2%", marginBottom:"2%"}} >{project.desc}</Typography>
               <Box display="flex" alignItems="center">
                 <Box minWidth={25}>
-                  <Typography variant="body2" color="textSecondary">{project.currentBalance} ETH</Typography>
+                  <Typography variant="body2" color="textSecondary">{project.paid.toPrecision(4)} ETH</Typography>
                 </Box>
                 <Box width="100%" mr={2}>
                   <LinearProgress style={{height:10, borderRadius:2}} variant="determinate" value={progress} />
                 </Box>
                 <Box minWidth={25}>
-                  <Typography variant="body2" color="textSecondary">{project.goal} ETH</Typography>
+                  <Typography variant="body2" color="textSecondary">{project.currentBalance} ETH</Typography>
                 </Box>
               </Box>
+              <Checkpoints idx = {index} project = {project} handleCheckpoint = {this.handleCheckpoint} finishButton = {false}/>
             </CardContent>
             <CardActions>
-              <TextField  name = "fundingAmount" label="Amount" value={project.fundingAmt} onChange = {(e)=>{this.handleFundChange(index,e)}}/>
-              {(project.state === "0") && <Button size="small" color="primary" variant="contained" onClick={()=>{this.handleFund(project.address,index)}} >Fund</Button>}
-              {(project.state !== "0") && <Button disabled size="small" color="secondary" variant="contained" onClick={()=>{this.handleFund(project.address,index)}} >Fund</Button>}
+              {project.votingState && <Typography variant = "body1" >Do you want to approve completion of checkpoint?</Typography>}<br/>
+              <FormGroup row>
+                <FormControlLabel disabled={!project.votingState || project.hasVoted[project.bindex]} control={<Checkbox checked={this.state.checkedY[index]} onChange={(e)=>{this.handleChange(index,e)}} name="checkedY" color="primary"/>} label="Yes"/>
+                <FormControlLabel disabled={!project.votingState || project.hasVoted[project.bindex]} control={<Checkbox checked={this.state.checkedN[index]} onChange={(e)=>{this.handleChange(index,e)}} name="checkedN" color="secondary"/>} label="No"/>
+                <Button disabled={!project.votingState || project.hasVoted[project.bindex]} variant="contained" color="primary" onClick={()=>{this.handleVote(index, project.address)}}>Vote</Button>
+              </FormGroup>
             </CardActions>
           </Card>
           </Paper>

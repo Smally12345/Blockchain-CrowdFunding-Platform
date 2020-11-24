@@ -8,14 +8,19 @@ import Typography from '@material-ui/core/Typography';
 class Checkpoints extends React.Component{
     constructor(props){
         super(props)
+        var stepslength = this.props.project.totalCheckpoints
+        var steps = []
+        for(var i = 0; i < stepslength; i++){
+            steps.push(i+1)
+        }
         this.state = {
-            activeStep : this.props.completedCheckpoints,
-            steps : ['Checkupointo Ichi', 'Checkupointo Ni', 'Checkupointo San'],
+            activeStep : this.props.project.completedCheckpoints,
+            steps : steps,
         }
     }
     handleClick = () =>{
-        this.props.handleCheckpoint(this.props.idx, this.props.projectaddr)
-        this.handleNext()
+        this.props.handleCheckpoint(this.props.idx, this.props.project.address)
+        // this.handleNext()
     }
     
     handleNext = () => {
@@ -25,7 +30,7 @@ class Checkpoints extends React.Component{
         })
     }
     render(){
-        console.log(this.props.totalCheckpoints)
+        console.log(this.props.project.totalCheckpoints)
         console.log(this.state.activeStep)
         return(
             <div style={{width:"100%"}}>
@@ -37,15 +42,18 @@ class Checkpoints extends React.Component{
                     ))}
                 </Stepper>
                 <div>
-                    {this.state.activeStep === this.props.totalCheckpoints ? (
+                    {this.state.activeStep === this.props.project.totalCheckpoints ? (
                     <div>
                         <Typography style={{marginTop:1, marginBottom:1}}>All steps completed</Typography>
                     </div>
                     ) : (
                     <div>
-                        <Button variant="contained" color="primary" onClick={this.handleClick}>
-                            Finish Checkpoint
-                        </Button>
+                        {this.props.finishButton === true && ( 
+                            <Button disabled={this.props.project.state !== "1" || this.props.project.votingState} variant="contained" color="primary" onClick={this.handleClick}>
+                                Finish Checkpoint
+                            </Button>
+                            )
+                        }
                     </div>
                     )}
                 </div>

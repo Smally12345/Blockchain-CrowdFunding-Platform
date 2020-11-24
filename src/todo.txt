@@ -1,4 +1,8 @@
-Voting system
+checkpoint not moving to next step at last checkpoint
+show original progress bar in myprojeclist
 Deadline
-Rounding paid value
 responsive checkpoint and progress bar
+Voting system issues and todo:
+    1) voting time
+    2) trigger termination when No count wins
+    3) division issue

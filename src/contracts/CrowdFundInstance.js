@@ -1,5 +1,5 @@
 import web3 from './web3';
-const address = "0x0c36E043dccFCF89313feA2141176d129e6aAaf7";
+const address = "0x4104464492519ac8233f6a20A3EccdE5Ee4D85F4";
 const abi = [
 	{
 		"anonymous": false,
@@ -51,6 +51,19 @@ const abi = [
 		"type": "event"
 	},
 	{
+		"inputs": [],
+		"name": "returnAllProjects",
+		"outputs": [
+			{
+				"internalType": "contract Project[]",
+				"name": "",
+				"type": "address[]"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
 		"inputs": [
 			{
 				"internalType": "string",
@@ -81,19 +94,6 @@ const abi = [
 		"name": "startProject",
 		"outputs": [],
 		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "returnAllProjects",
-		"outputs": [
-			{
-				"internalType": "contract Project[]",
-				"name": "",
-				"type": "address[]"
-			}
-		],
-		"stateMutability": "view",
 		"type": "function"
 	}
 ]

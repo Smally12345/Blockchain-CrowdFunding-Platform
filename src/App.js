@@ -1,7 +1,6 @@
 import React from 'react';
 import web3 from './contracts/web3'
 import CrowdFundInstance from './contracts/CrowdFundInstance';
-import ProjectInstance from './contracts/ProjectInstance';
 import ProjectList from './ProjectList';
 import MyProjectList from './MyProjectList';
 import ProjectFundedList from './ProjectFundedList'; 
@@ -13,9 +12,6 @@ class App extends React.Component{
   constructor(){
     super()
     this.state ={
-      projects: [],
-      projects_started:[],
-      projects_funded:[],
       address : "",
       loading : true,
       tabvalue:0,
@@ -27,34 +23,6 @@ class App extends React.Component{
     this.setState({
       address : accounts[0],
     })
-    const arr = await CrowdFundInstance.methods.returnAllProjects().call()
-    for(var i = 0; i < arr.length; i++){
-      const project = ProjectInstance(arr[i])
-      const data = await project.methods.getDetails().call()
-      const projectdata = {
-        address : arr[i],
-        creator : data.Creator,
-        title : data.ProjectTitle,
-        desc : data.ProjectDesc,
-        goal : data.AmountGoal/ 10**18,
-        currentBalance : data.CurrentBal/ 10**18,
-        fundingAmt:0,
-        state :data.CurrentState,
-        deadline : new Date(data.Deadline * 1000),
-        totalCheckpoints : data.total_checkpoints,
-        completedCheckpoints : data.completed_checkpoints,
-        paid : data.Paid / 10**18,
-      }
-      this.setState({
-        projects : [...this.state.projects, projectdata]
-      })
-      if(data.Creator === accounts[0]){
-        this.setState({
-          projects_started : [...this.state.projects_started, projectdata]
-        }) 
-      }
-    }
-    
   }
   componentDidMount(){
       this.load().then(()=>{
@@ -69,22 +37,27 @@ class App extends React.Component{
     })
     CrowdFundInstance.methods.startProject(data.Title, data.Desc, web3.utils.toWei(data.Goal, 'ether'), data.Deadline, data.Checkpoints).send({from:this.state.address}).then((res)=>{
       alert("Project Created Successfully")
-      const projectInfo = res.events.ProjectStarted.returnValues;
-      const projectdata = {
-        address : projectInfo.contractAddress,
-        title : projectInfo.projectTitle,
-        desc : projectInfo.projectDesc,
-        goal : projectInfo.goal/ 10**18,
-        currentBalance : 0,
-        fundingAmt:0,
-        state : "0", 
-        deadline : new Date(projectInfo.deadline * 1000),
-        totalCheckpoints: projectInfo.TotalCheckpoints,
-        completedCheckpoints : 0,
-        paid : 0,
-      }
+      // const projectInfo = res.events.ProjectStarted.returnValues;
+      // const projectdata = {
+      //   address : projectInfo.contractAddress,
+      //   title : projectInfo.projectTitle,
+      //   desc : projectInfo.projectDesc,
+      //   goal : projectInfo.goal/ 10**18,
+      //   currentBalance : 0,
+      //   fundingAmt:0,
+      //   state : "0", 
+      //   deadline : new Date(projectInfo.deadline * 1000),
+      //   totalCheckpoints: projectInfo.TotalCheckpoints,
+      //   completedCheckpoints : 0,
+      //   paid : 0,
+      //   backers : [],
+      //   votingState : false,
+      //   hasVoted: [],
+      //   votingResult : false,
+      // }
       this.setState({
-        projects : [...this.state.projects, projectdata],
+        // projects : [...this.state.projects, projectdata],
+        // projects_started : [...this.state.projects_started, projectdata],
         loading:false
       })
     }).catch(()=>{
@@ -123,17 +96,17 @@ class App extends React.Component{
               </Grid>
             {(this.state.tabvalue === 0) && 
               <Grid container item  justify = "center" alignItems = "center"  xs = {12} spacing={5} >
-                <ProjectList address = {this.state.address} projects = {this.state.projects} />
+                <ProjectList address = {this.state.address} />
               </Grid>
             }
             {(this.state.tabvalue === 1) && 
               <Grid container item justify = "center" alignItems = "center" xs = {12} spacing={5} >
-                <MyProjectList address = {this.state.address} projects = {this.state.projects_started}/>
+                <MyProjectList address = {this.state.address} />
               </Grid>
             }
             {(this.state.tabvalue === 2) && 
               <Grid container item justify = "center" alignItems = "center" xs = {12} spacing={5} >
-                <ProjectFundedList address = {this.state.address} projects = {this.state.projects_funded}/>
+                <ProjectFundedList address = {this.state.address}/>
               </Grid>
             }
           </Grid> 

@@ -1,7 +1,8 @@
 import React from 'react';
-import web3 from './contracts/web3'
+import web3 from './contracts/web3';
+import CrowdFundInstance from './contracts/CrowdFundInstance';
 import ProjectInstance from './contracts/ProjectInstance';
-import {Box, Grid, Card, CardContent, CardActions, Typography, TextField, Button, Paper, Chip, LinearProgress} from '@material-ui/core';
+import {Box, Grid, Card, CardContent, CardActions, Typography, TextField, Button, Paper, Chip, LinearProgress, CircularProgress} from '@material-ui/core';
 const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sept", "Oct", "Nov", "Dec"];
 const states = ["Fundraising", "Fundsraised", "Completed"]
 const StateColors = ["primary", "secondary","default"]
@@ -9,9 +10,47 @@ class ProjectList extends React.Component{
   constructor(props){
     super(props)
     this.state ={
+        loading:true,
         address : this.props.address,
-        projects: this.props.projects,
+        projects: [],
     }
+  }
+
+  async load(){
+    const arr = await CrowdFundInstance.methods.returnAllProjects().call()
+    for(var i = 0; i < arr.length; i++){
+      const project = ProjectInstance(arr[i])
+      const data = await project.methods.getDetails().call()
+      const votingData = await project.methods.getVoteDetails().call()
+      const projectdata = {
+        address : arr[i],
+        creator : data.Creator,
+        title : data.ProjectTitle,
+        desc : data.ProjectDesc,
+        goal : data.AmountGoal/ 10**18,
+        currentBalance : data.CurrentBal/ 10**18,
+        fundingAmt:0,
+        state :data.CurrentState,
+        deadline : new Date(data.Deadline * 1000),
+        totalCheckpoints : data.total_checkpoints,
+        completedCheckpoints : data.completed_checkpoints,
+        paid : data.Paid / 10**18,
+        backers : data.Backers,
+        votingState : votingData.votingState,
+        hasVoted: votingData.HasVoted,
+        votingResult : votingData.result,
+      }
+      this.setState({
+        projects : [...this.state.projects, projectdata]
+      })
+    }
+  }
+  componentDidMount(){
+      this.load().then(()=>{
+      this.setState({
+        loading:false
+      })
+    })
   }
   
   handleFund(projectaddr, idx){
@@ -26,6 +65,7 @@ class ProjectList extends React.Component{
         const data = res.events.Fund.returnValues;
         project.currentBalance = data.CurrentBalance / 10**18
         project.state = data.state
+        project.backers = data.backers
         project.fundingAmt = "0"
         projects[idx] = project
         this.setState({
@@ -34,6 +74,7 @@ class ProjectList extends React.Component{
       }).catch((err)=>{
         alert(err)
       })
+      
   }
   handleFundChange(idx, e){
 
@@ -47,7 +88,11 @@ class ProjectList extends React.Component{
   }
   
   render(){
- 
+    if(this.state.loading ){
+      return(
+        <center><CircularProgress size={50} style={{marginTop:50}}/></center>
+      )
+    }
     return(
       <>{this.state.projects.map((project,index) => {
         const day = this.state.projects[index].deadline.getDate().toString()

@@ -1,6 +1,7 @@
 import React from 'react';
 import ProjectInstance from './contracts/ProjectInstance';
-import {Box, Grid, Card, CardContent, Typography, TextField, Button, Paper, Chip, LinearProgress} from '@material-ui/core';
+import CrowdFundInstance from './contracts/CrowdFundInstance';
+import {Box, Grid, Card, CardContent, Typography, Paper, Chip, LinearProgress, CircularProgress} from '@material-ui/core';
 import Checkpoints from './Checkpoints';
 const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sept", "Oct", "Nov", "Dec"];
 const states = ["Fundraising", "Fundsraised","Completed"]
@@ -9,23 +10,62 @@ class MyProjectList extends React.Component{
   constructor(props){
     super(props)
     this.state ={
+        loading : true,
         address : this.props.address,
-        projects: this.props.projects,
+        projects: [],
     }
   }
   
+  async load(){
+    const arr = await CrowdFundInstance.methods.returnAllProjects().call()
+    for(var i = 0; i < arr.length; i++){
+      const project = ProjectInstance(arr[i])
+      const data = await project.methods.getDetails().call()
+      const votingData = await project.methods.getVoteDetails().call()
+      const projectdata = {
+        address : arr[i],
+        creator : data.Creator,
+        title : data.ProjectTitle,
+        desc : data.ProjectDesc,
+        goal : data.AmountGoal/ 10**18,
+        currentBalance : data.CurrentBal/ 10**18,
+        fundingAmt:0,
+        state :data.CurrentState,
+        deadline : new Date(data.Deadline * 1000),
+        totalCheckpoints : data.total_checkpoints,
+        completedCheckpoints : data.completed_checkpoints,
+        paid : data.Paid / 10**18,
+        backers : data.Backers,
+        votingState : votingData.votingState,
+        hasVoted: votingData.HasVoted,
+        votingResult : votingData.result,
+      }
+      if(data.Creator === this.state.address){
+        this.setState({
+          projects : [...this.state.projects, projectdata]
+        }) 
+      }
+    }
+    
+  }
+  componentDidMount(){
+      this.load().then(()=>{
+      this.setState({
+        loading:false
+      })
+    })
+  }
+
   handleCheckpoint = (idx, projectaddr)=>{
     const project = ProjectInstance(projectaddr)
-    project.methods.completeCheckpoints().send({
+    project.methods.triggerVoting().send({
       from: this.state.address,
     }).then((res)=>{
-      alert("checkpoint completed")
+      alert("voting process started")
       let projects = [...this.state.projects]
       let project = {...this.state.projects[idx]}
-      const data = res.events.Checkpoint.returnValues;
-      project.paid = data.paid / 10**18
-      project.state = data.state
-      project.completedCheckpoints = data.CompletedCheckpoints
+      const data = res.events.Trigger.returnValues;
+      project.votingState = data.votingState
       projects[idx] = project
       this.setState({
         projects
@@ -36,7 +76,11 @@ class MyProjectList extends React.Component{
 }
   
   render(){
- 
+    if(this.state.loading){
+      return(
+        <center><CircularProgress size={50} style={{marginTop:50}}/></center>
+      )
+    }
     return(
       <>{this.state.projects.map((project,index) => {
         const day = this.state.projects[index].deadline.getDate().toString()
@@ -47,7 +91,9 @@ class MyProjectList extends React.Component{
         if(progress > 100){
           progress = 100
         }
-        
+        if(project.state === "0"){
+          progress = 0
+        }
         return(
           <Grid  item xs = {12} > 
           <Paper elevation = {2} >
@@ -59,7 +105,7 @@ class MyProjectList extends React.Component{
               <Typography variant = "body1" style={{marginTop:"2%", marginBottom:"2%"}} >{project.desc}</Typography>
               <Box display="flex" alignItems="center">
                 <Box minWidth={25}>
-                  <Typography variant="body2" color="textSecondary">{project.paid} ETH</Typography>
+                  <Typography variant="body2" color="textSecondary">{project.paid.toPrecision(4)} ETH</Typography>
                 </Box>
                 <Box width="100%" mr={2}>
                   <LinearProgress style={{height:10, borderRadius:2}} variant="determinate" value={progress} />
@@ -68,7 +114,7 @@ class MyProjectList extends React.Component{
                   <Typography variant="body2" color="textSecondary">{project.currentBalance} ETH</Typography>
                 </Box>
               </Box>
-              <Checkpoints idx = {index} projectaddr = {project.address} completedCheckpoints = {project.completedCheckpoints} totalCheckpoints = {project.totalCheckpoints} handleCheckpoint = {this.handleCheckpoint}/>
+              <Checkpoints idx = {index} project = {project} finishButton = {true} handleCheckpoint = {this.handleCheckpoint}/>
             </CardContent>
           </Card>
           </Paper>
