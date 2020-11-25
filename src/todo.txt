@@ -1,8 +1,8 @@
-checkpoint not moving to next step at last checkpoint
-show original progress bar in myprojeclist
-Deadline
-responsive checkpoint and progress bar
-Voting system issues and todo:
-    1) voting time
-    2) trigger termination when No count wins
-    3) division issue
+
+TODO:
+1) checkpoint not moving to next step - UI
+2) voting time  and count UI - UI
+3) responsive checkpoint and progress bar- UI
+4) show original progress bar in myprojeclist - UI
+5) Deadline - SC and UI
+6) homepage (optional)

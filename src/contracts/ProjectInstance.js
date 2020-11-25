@@ -78,7 +78,7 @@ const abi = [
 			},
 			{
 				"indexed": false,
-				"internalType": "address[]",
+				"internalType": "address payable[]",
 				"name": "backers",
 				"type": "address[]"
 			}
@@ -91,9 +91,40 @@ const abi = [
 		"inputs": [
 			{
 				"indexed": false,
+				"internalType": "uint256",
+				"name": "Currentbalance",
+				"type": "uint256"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "Paid",
+				"type": "uint256"
+			},
+			{
+				"indexed": false,
+				"internalType": "enum Project.State",
+				"name": "state",
+				"type": "uint8"
+			}
+		],
+		"name": "Refund",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": false,
 				"internalType": "bool",
 				"name": "votingState",
 				"type": "bool"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "votingTime",
+				"type": "uint256"
 			}
 		],
 		"name": "Trigger",
@@ -179,7 +210,7 @@ const abi = [
 		"name": "backers",
 		"outputs": [
 			{
-				"internalType": "address",
+				"internalType": "address payable",
 				"name": "",
 				"type": "address"
 			}
@@ -274,6 +305,20 @@ const abi = [
 	},
 	{
 		"inputs": [],
+		"name": "endRefundVoting",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "endVoting",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [],
 		"name": "getDetails",
 		"outputs": [
 			{
@@ -327,9 +372,47 @@ const abi = [
 				"type": "uint256"
 			},
 			{
-				"internalType": "address[]",
+				"internalType": "address payable[]",
 				"name": "Backers",
 				"type": "address[]"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "getRefundVoteDetails",
+		"outputs": [
+			{
+				"internalType": "bool",
+				"name": "refundVotingState",
+				"type": "bool"
+			},
+			{
+				"internalType": "bool[]",
+				"name": "refundHasVoted",
+				"type": "bool[]"
+			},
+			{
+				"internalType": "uint256",
+				"name": "refundYesCount",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "refundNoCount",
+				"type": "uint256"
+			},
+			{
+				"internalType": "bool",
+				"name": "refundResult",
+				"type": "bool"
+			},
+			{
+				"internalType": "uint256",
+				"name": "refundVotingTime",
+				"type": "uint256"
 			}
 		],
 		"stateMutability": "view",
@@ -350,9 +433,24 @@ const abi = [
 				"type": "bool[]"
 			},
 			{
+				"internalType": "uint256",
+				"name": "YesCount",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "NoCount",
+				"type": "uint256"
+			},
+			{
 				"internalType": "bool",
 				"name": "result",
 				"type": "bool"
+			},
+			{
+				"internalType": "uint256",
+				"name": "votingTime",
+				"type": "uint256"
 			}
 		],
 		"stateMutability": "view",
@@ -379,6 +477,37 @@ const abi = [
 				"internalType": "uint256",
 				"name": "",
 				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "bool",
+				"name": "choice",
+				"type": "bool"
+			},
+			{
+				"internalType": "uint256",
+				"name": "idx",
+				"type": "uint256"
+			}
+		],
+		"name": "refundVote",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "refundVoting",
+		"outputs": [
+			{
+				"internalType": "contract Voting",
+				"name": "",
+				"type": "address"
 			}
 		],
 		"stateMutability": "view",

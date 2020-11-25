@@ -14,6 +14,8 @@ contract CrowdFund{
         uint256 TotalCheckpoints
     );
     function startProject(string calldata title, string calldata desc, uint goal, uint deadlineInDays, uint TotalCheckpoints) external {
+        require(TotalCheckpoints > 1);
+        require(deadlineInDays> 0);
         uint deadline = now.add(deadlineInDays.mul(1 days));
         Project project = new Project(title, desc, goal, deadline, msg.sender, TotalCheckpoints);
         projects.push(project);
@@ -27,6 +29,16 @@ contract CrowdFund{
             TotalCheckpoints
         );
     }
+    function deleteProject(uint index) external returns(Project[] memory){
+        if (index >= projects.length) return projects;
+
+        for (uint i = index; i < projects.length-1; i++){
+            projects[i] = projects[i+1];
+        }
+        projects.pop();
+        return projects;
+    }
+    
     function returnAllProjects() external view returns(Project[] memory){
         return projects;
     }

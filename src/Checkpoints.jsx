@@ -19,7 +19,7 @@ class Checkpoints extends React.Component{
         }
     }
     handleClick = () =>{
-        this.props.handleCheckpoint(this.props.idx, this.props.project.address)
+        this.props.handleEndVoting(this.props.idx, this.props.project.address)
         // this.handleNext()
     }
     
@@ -49,8 +49,8 @@ class Checkpoints extends React.Component{
                     ) : (
                     <div>
                         {this.props.finishButton === true && ( 
-                            <Button disabled={this.props.project.state !== "1" || this.props.project.votingState} variant="contained" color="primary" onClick={this.handleClick}>
-                                Finish Checkpoint
+                            <Button disabled={this.props.project.state !== "1" || (!this.props.project.votingState && !this.props.project.refundVotingState) || this.props.project.votingTime > 0 || this.props.project.refundVotingTime > 0} variant="contained" color="secondary" onClick={this.handleClick}>
+                                End Voting
                             </Button>
                             )
                         }

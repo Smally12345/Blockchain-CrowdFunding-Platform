@@ -4,8 +4,8 @@ import CrowdFundInstance from './contracts/CrowdFundInstance';
 import {Box, Grid, Card, CardContent, CardActions, Typography, Button, Paper, Chip, LinearProgress, CircularProgress, FormControlLabel, FormGroup, Checkbox} from '@material-ui/core';
 import Checkpoints from './Checkpoints'
 const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sept", "Oct", "Nov", "Dec"];
-const states = ["Fundraising", "Fundsraised", "Completed"]
-const StateColors = ["primary", "secondary","default"]
+const states = ["Fundraising", "Fundsraised", "Completed", "Expired"]
+const StateColors = ["primary", "secondary","default", "secondary"]
 class ProjectFundedList extends React.Component{
   constructor(props){
     super(props)
@@ -24,6 +24,7 @@ class ProjectFundedList extends React.Component{
       const project = ProjectInstance(arr[i])
       const data = await project.methods.getDetails().call()
       var bindex = -1
+      console.log(data.Backers)
       for(var j = 0; j < data.Backers.length; j++){
         if(data.Backers[j] === this.state.address){
           bindex = j
@@ -34,6 +35,7 @@ class ProjectFundedList extends React.Component{
         continue
       }
       const votingData = await project.methods.getVoteDetails().call()
+      const refundVotingData = await project.methods.getRefundVoteDetails().call()
       const projectdata = {
         address : arr[i],
         creator : data.Creator,
@@ -51,6 +53,13 @@ class ProjectFundedList extends React.Component{
         votingState : votingData.votingState,
         hasVoted: votingData.HasVoted,
         votingResult : votingData.result,
+        votingTime : votingData.votingTime,
+        refundVotingState : refundVotingData.refundVotingState,
+        refundHasVoted : refundVotingData.refundHasVoted,
+        refundResult : refundVotingData.refundResult,
+        refundYesCount : refundVotingData.refundYesCount,
+        refundNoCount : refundVotingData.refundNoCount,
+        refundVotingTime : refundVotingData.refundVotingTime,
         bindex,
       }
       this.setState({
@@ -82,30 +91,69 @@ class ProjectFundedList extends React.Component{
         alert("Choose one option")
         return;
       }
-
-      project.methods.Vote(choice, this.state.projects[idx].bindex).send({
-        from: this.state.address,
-      }).then((res)=>{
-        alert("vote success")
-        let projects = [...this.state.projects]
-        let project = {...this.state.projects[idx]}
-        const data = res.events.VoteEvent.returnValues;
-        project.votingState = data.votingState
-        project.hasVoted = data.HasVoted
-        project.votingResult = data.result
-        if(project.votingState === false && project.votingResult === true){
-          const checkpointdata = res.events.Checkpoint.returnValues;
-          project.paid = checkpointdata.paid/ 10**18
-          project.completedCheckpoints = checkpointdata.CompletedCheckpoints
-          project.state = checkpointdata.state
-        }
-        projects[idx] = project
-        this.setState({
-          projects
+      if(this.state.projects[idx].votingState === true){
+        project.methods.Vote(choice, this.state.projects[idx].bindex).send({
+          from: this.state.address,
+        }).then((res)=>{
+          alert("vote success")
+          let projects = [...this.state.projects]
+          let project = {...this.state.projects[idx]}
+          const data = res.events.VoteEvent.returnValues;
+          project.votingState = data.votingState
+          project.hasVoted = data.HasVoted
+          project.votingResult = data.result
+          if(project.votingState === false && project.votingResult === true){
+            const checkpointdata = res.events.Checkpoint.returnValues;
+            console.log(checkpointdata)
+            project.paid = checkpointdata.paid/ 10**18
+            project.completedCheckpoints = checkpointdata.CompletedCheckpoints
+            project.state = checkpointdata.state
+          }
+          else if(project.votingState === false && project.votingResult === false){
+            const triggerdata = res.events.Trigger.returnValues;
+            project.refundVotingState = triggerdata.votingState
+            project.refundVotingTime = triggerdata.votingTime
+          }
+          projects[idx] = project
+          let checkedY = [...this.state.checkedY]
+          checkedY[idx] = false
+          let checkedN = [...this.state.checkedN]
+          checkedN[idx] = false
+          this.setState({
+            projects,
+            checkedY,
+            checkedN
+          })
+        }).catch((err)=>{
+          alert(err)
         })
-      }).catch((err)=>{
-        alert(err)
-      })
+      }
+      else if(this.state.projects[idx].refundVotingState === true){
+        project.methods.refundVote(choice, this.state.projects[idx].bindex).send({
+          from: this.state.address,
+        }).then((res)=>{
+          alert("vote success")
+          let projects = [...this.state.projects]
+          let project = {...this.state.projects[idx]}
+          const data = res.events.VoteEvent.returnValues;
+          project.refundVotingState = data.votingState
+          project.refundHasVoted = data.HasVoted
+          project.refundResult = data.result
+          if(project.refundVotingState === false && project.refundResult === true){
+            const refunddata = res.events.Refund.returnValues;
+            project.paid = refunddata.Paid/ 10**18
+            project.currentBalance = refunddata.Currentbalance
+            project.state = refunddata.state
+          }
+          projects[idx] = project
+          this.setState({
+            projects
+          })
+        }).catch((err)=>{
+          alert(err)
+        })
+      }
+      
   }
 
   handleChange = (idx, e) => {
@@ -142,7 +190,7 @@ class ProjectFundedList extends React.Component{
         if(progress > 100){
           progress = 100
         }
-        if(project.state === "0"){
+        if(project.state === "0" || project.state === "3"){
           progress = 0
         }
 
@@ -169,11 +217,12 @@ class ProjectFundedList extends React.Component{
               <Checkpoints idx = {index} project = {project} handleCheckpoint = {this.handleCheckpoint} finishButton = {false}/>
             </CardContent>
             <CardActions>
-              {project.votingState && <Typography variant = "body1" >Do you want to approve completion of checkpoint?</Typography>}<br/>
+              {project.votingState && <><Typography variant = "body1" >Vote to approve completion of checkpoint</Typography><br/></>}
+              {project.refundVotingState && <><Typography variant = "body1" >Vote for termination and refund:</Typography><br/></>}
               <FormGroup row>
-                <FormControlLabel disabled={!project.votingState || project.hasVoted[project.bindex]} control={<Checkbox checked={this.state.checkedY[index]} onChange={(e)=>{this.handleChange(index,e)}} name="checkedY" color="primary"/>} label="Yes"/>
-                <FormControlLabel disabled={!project.votingState || project.hasVoted[project.bindex]} control={<Checkbox checked={this.state.checkedN[index]} onChange={(e)=>{this.handleChange(index,e)}} name="checkedN" color="secondary"/>} label="No"/>
-                <Button disabled={!project.votingState || project.hasVoted[project.bindex]} variant="contained" color="primary" onClick={()=>{this.handleVote(index, project.address)}}>Vote</Button>
+                <FormControlLabel disabled={(!project.votingState || project.hasVoted[project.bindex]) && (!project.refundVotingState || project.refundHasVoted[project.bindex]) } control={<Checkbox checked={this.state.checkedY[index]} onChange={(e)=>{this.handleChange(index,e)}} name="checkedY" color="primary"/>} label="Yes"/>
+                <FormControlLabel disabled={(!project.votingState || project.hasVoted[project.bindex]) && (!project.refundVotingState || project.refundHasVoted[project.bindex])} control={<Checkbox checked={this.state.checkedN[index]} onChange={(e)=>{this.handleChange(index,e)}} name="checkedN" color="secondary"/>} label="No"/>
+                <Button disabled={(!project.votingState || project.hasVoted[project.bindex]) && (!project.refundVotingState || project.refundHasVoted[project.bindex]) } variant="contained" color="primary" onClick={()=>{this.handleVote(index, project.address)}}>Vote</Button>
               </FormGroup>
             </CardActions>
           </Card>

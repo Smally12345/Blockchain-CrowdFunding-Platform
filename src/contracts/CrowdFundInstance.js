@@ -1,5 +1,5 @@
 import web3 from './web3';
-const address = "0x4104464492519ac8233f6a20A3EccdE5Ee4D85F4";
+const address = "0xeC723Bf9E081F2b8a818F9B3671ee26e6E4C7bB1";
 const abi = [
 	{
 		"anonymous": false,
@@ -49,6 +49,25 @@ const abi = [
 		],
 		"name": "ProjectStarted",
 		"type": "event"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "index",
+				"type": "uint256"
+			}
+		],
+		"name": "deleteProject",
+		"outputs": [
+			{
+				"internalType": "contract Project[]",
+				"name": "",
+				"type": "address[]"
+			}
+		],
+		"stateMutability": "nonpayable",
+		"type": "function"
 	},
 	{
 		"inputs": [],

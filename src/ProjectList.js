@@ -4,8 +4,8 @@ import CrowdFundInstance from './contracts/CrowdFundInstance';
 import ProjectInstance from './contracts/ProjectInstance';
 import {Box, Grid, Card, CardContent, CardActions, Typography, TextField, Button, Paper, Chip, LinearProgress, CircularProgress} from '@material-ui/core';
 const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sept", "Oct", "Nov", "Dec"];
-const states = ["Fundraising", "Fundsraised", "Completed"]
-const StateColors = ["primary", "secondary","default"]
+const states = ["Fundraising", "Fundsraised", "Completed", "Expired"]
+const StateColors = ["primary", "secondary","default", "secondary"]
 class ProjectList extends React.Component{
   constructor(props){
     super(props)
@@ -77,7 +77,6 @@ class ProjectList extends React.Component{
       
   }
   handleFundChange(idx, e){
-
     let projects = [...this.state.projects]
     let project = {...this.state.projects[idx]}
     project.fundingAmt = e.target.value
@@ -126,7 +125,7 @@ class ProjectList extends React.Component{
               </Box>
             </CardContent>
             <CardActions>
-              <TextField  name = "fundingAmount" label="Amount" value={project.fundingAmt} onChange = {(e)=>{this.handleFundChange(index,e)}}/>
+              <TextField  name = "fundingAmount" variant="outlined" type = "number" label="Amount" InputLabelProps={{shrink: true,}} value={project.fundingAmt} onChange = {(e)=>{this.handleFundChange(index,e)}}/>
               {(project.state === "0") && <Button size="small" color="primary" variant="contained" onClick={()=>{this.handleFund(project.address,index)}} >Fund</Button>}
               {(project.state !== "0") && <Button disabled size="small" color="secondary" variant="contained" onClick={()=>{this.handleFund(project.address,index)}} >Fund</Button>}
             </CardActions>

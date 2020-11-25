@@ -1,11 +1,11 @@
 import React from 'react';
 import ProjectInstance from './contracts/ProjectInstance';
 import CrowdFundInstance from './contracts/CrowdFundInstance';
-import {Box, Grid, Card, CardContent, Typography, Paper, Chip, LinearProgress, CircularProgress} from '@material-ui/core';
+import {Box, Grid, Card, CardContent, Typography, Paper, Button, Chip, LinearProgress, CircularProgress} from '@material-ui/core';
 import Checkpoints from './Checkpoints';
 const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sept", "Oct", "Nov", "Dec"];
-const states = ["Fundraising", "Fundsraised","Completed"]
-const StateColors = ["primary", "secondary","default"]
+const states = ["Fundraising", "Fundsraised","Completed", "Expired"]
+const StateColors = ["primary", "secondary","default", "secondary"]
 class MyProjectList extends React.Component{
   constructor(props){
     super(props)
@@ -22,6 +22,7 @@ class MyProjectList extends React.Component{
       const project = ProjectInstance(arr[i])
       const data = await project.methods.getDetails().call()
       const votingData = await project.methods.getVoteDetails().call()
+      const refundVotingData = await project.methods.getRefundVoteDetails().call()
       const projectdata = {
         address : arr[i],
         creator : data.Creator,
@@ -39,6 +40,15 @@ class MyProjectList extends React.Component{
         votingState : votingData.votingState,
         hasVoted: votingData.HasVoted,
         votingResult : votingData.result,
+        yesCount : votingData.YesCount,
+        noCount : votingData.NoCount,
+        votingTime : votingData.votingTime,
+        refundVotingState : refundVotingData.refundVotingState,
+        refundHasVoted : refundVotingData.refundHasVoted,
+        refundResult : refundVotingData.refundResult,
+        refundYesCount : refundVotingData.refundYesCount,
+        refundNoCount : refundVotingData.refundNoCount,
+        refundVotingTime : refundVotingData.refundVotingTime,
       }
       if(data.Creator === this.state.address){
         this.setState({
@@ -65,6 +75,7 @@ class MyProjectList extends React.Component{
       let projects = [...this.state.projects]
       let project = {...this.state.projects[idx]}
       const data = res.events.Trigger.returnValues;
+      project.votingTime = data.votingTime
       project.votingState = data.votingState
       projects[idx] = project
       this.setState({
@@ -73,7 +84,54 @@ class MyProjectList extends React.Component{
     }).catch((err)=>{
       alert(err)
     })
-}
+  }
+
+  handleEndVoting = (idx, projectaddr)=>{
+    const project = ProjectInstance(projectaddr)
+    if(this.state.projects[idx].votingState === true){
+      project.methods.endVoting().send({
+        from: this.state.address,
+      }).then((res)=>{
+        alert("voting process terminated")
+        let projects = [...this.state.projects]
+        let project = {...this.state.projects[idx]}
+        const data = res.events.VoteEvent.returnValues;
+        project.votingResult = data.result
+        project.votingState = data.votingState
+        project.hasVoted = data.HasVoted
+        const checkpointdata = res.events.Checkpoint.returnValues;
+        project.paid = checkpointdata.paid/ 10**18
+        project.completedCheckpoints = checkpointdata.CompletedCheckpoints
+        project.state = checkpointdata.state
+        projects[idx] = project
+        this.setState({
+          projects
+        })
+      }).catch((err)=>{
+        alert(err)
+      })
+    }
+    else if(this.state.projects[idx].refundVotingState === true){
+      project.methods.endRefundVoting().send({
+        from: this.state.address,
+      }).then((res)=>{
+        alert("refund voting process terminated")
+        let projects = [...this.state.projects]
+        let project = {...this.state.projects[idx]}
+        const data = res.events.VoteEvent.returnValues;
+        project.refundResult = data.result
+        project.refundVotingState = data.votingState
+        project.refundHasVoted = data.HasVoted
+        projects[idx] = project
+        this.setState({
+          projects
+        })
+      }).catch((err)=>{
+        alert(err)
+      })
+    }
+    
+  }
   
   render(){
     if(this.state.loading){
@@ -114,7 +172,11 @@ class MyProjectList extends React.Component{
                   <Typography variant="body2" color="textSecondary">{project.currentBalance} ETH</Typography>
                 </Box>
               </Box>
-              <Checkpoints idx = {index} project = {project} finishButton = {true} handleCheckpoint = {this.handleCheckpoint}/>
+              <Checkpoints idx = {index} project = {project} finishButton = {true} handleEndVoting = {this.handleEndVoting}/>
+              <br/>
+              <Button disabled={project.state !== "1" || project.votingState || project.refundVotingState} variant="contained" color="primary" onClick={() => {this.handleCheckpoint(index, project.address)}}>
+                Finish Checkpoint
+              </Button>
             </CardContent>
           </Card>
           </Paper>
