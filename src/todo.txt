@@ -1,8 +1,4 @@
 
 TODO:
-1) checkpoint not moving to next step - UI
-2) voting time  and count UI - UI
-3) responsive checkpoint and progress bar- UI
-4) show original progress bar in myprojeclist - UI
-5) Deadline - SC and UI
-6) homepage (optional)
+1) Deadline text mobile- SC and UI
+2) homepage (optional)

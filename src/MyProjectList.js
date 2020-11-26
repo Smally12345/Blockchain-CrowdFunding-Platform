@@ -3,6 +3,7 @@ import ProjectInstance from './contracts/ProjectInstance';
 import CrowdFundInstance from './contracts/CrowdFundInstance';
 import {Box, Grid, Card, CardContent, Typography, Paper, Button, Chip, LinearProgress, CircularProgress} from '@material-ui/core';
 import Checkpoints from './Checkpoints';
+import VoteTimer from './VoteTimer';
 const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sept", "Oct", "Nov", "Dec"];
 const states = ["Fundraising", "Fundsraised","Completed", "Expired"]
 const StateColors = ["primary", "secondary","default", "secondary"]
@@ -42,13 +43,13 @@ class MyProjectList extends React.Component{
         votingResult : votingData.result,
         yesCount : votingData.YesCount,
         noCount : votingData.NoCount,
-        votingTime : votingData.votingTime,
+        votingTime : parseInt(votingData.votingTime),
         refundVotingState : refundVotingData.refundVotingState,
         refundHasVoted : refundVotingData.refundHasVoted,
         refundResult : refundVotingData.refundResult,
         refundYesCount : refundVotingData.refundYesCount,
         refundNoCount : refundVotingData.refundNoCount,
-        refundVotingTime : refundVotingData.refundVotingTime,
+        refundVotingTime : parseInt(refundVotingData.refundVotingTime),
       }
       if(data.Creator === this.state.address){
         this.setState({
@@ -64,6 +65,57 @@ class MyProjectList extends React.Component{
         loading:false
       })
     })
+    this.timerID = setInterval(
+      () => this.tick(),
+      1000
+    );
+  }
+
+
+  componentWillUnmount() {
+    clearInterval(this.timerID);
+  }
+
+  tick() {
+    var projects = [...this.state.projects]
+    projects.forEach(async (project, idx) =>{
+      if(project.votingState){
+        if(project.votingTime === 0){
+          return;
+        }
+        project.votingTime = project.votingTime - 1
+      }
+      else if(project.refundVotingState){
+        if(project.refundVotingTime === 0){
+          return;
+        }
+        project.refundVotingTime = project.refundVotingTime - 1
+      }
+      if(project.votingState === true && project.votingTime === 0){
+        const projectInst = ProjectInstance(project.address)
+        const votingData = await projectInst.methods.getVoteDetails().call()
+          project.votingState = votingData.votingState
+          project.hasVoted = votingData.HasVoted
+          project.votingResult = votingData.result
+          project.yesCount = votingData.YesCount
+          project.noCount = votingData.NoCount
+          project.votingTime = parseInt(votingData.votingTime)
+        }
+        else if(project.refundVotingState === true && project.refundVotingTime === 0){
+          const projectInst = ProjectInstance(project.address)
+          const refundVotingData = await projectInst.methods.getRefundVoteDetails().call()
+          project.refundVotingState = refundVotingData.refundVotingState
+          project.refundHasVoted = refundVotingData.refundHasVoted
+          project.refundResult = refundVotingData.refundResult
+          project.refundYesCount = refundVotingData.refundYesCount
+          project.refundNoCount = refundVotingData.refundNoCount
+          project.refundVotingTime = parseInt(refundVotingData.refundVotingTime)
+        }
+    })
+    this.setState({
+      projects
+    })
+    
   }
 
   handleCheckpoint = (idx, projectaddr)=>{
@@ -75,7 +127,7 @@ class MyProjectList extends React.Component{
       let projects = [...this.state.projects]
       let project = {...this.state.projects[idx]}
       const data = res.events.Trigger.returnValues;
-      project.votingTime = data.votingTime
+      project.votingTime = parseInt(data.votingTime)
       project.votingState = data.votingState
       projects[idx] = project
       this.setState({
@@ -149,11 +201,11 @@ class MyProjectList extends React.Component{
         if(progress > 100){
           progress = 100
         }
-        if(project.state === "0"){
+        if(project.state === "0" || project.state === "3"){
           progress = 0
         }
         return(
-          <Grid  item xs = {12} > 
+          <Grid  item xs = {12} key = {index}> 
           <Paper elevation = {2} >
           <Card elevation ={2} variant="outlined" key={index} style={{padding:"20px",boxShadow: "0px 50px 80px 0px rgba(15,19,25,0.1)"}}>
             <CardContent>
@@ -163,20 +215,32 @@ class MyProjectList extends React.Component{
               <Typography variant = "body1" style={{marginTop:"2%", marginBottom:"2%"}} >{project.desc}</Typography>
               <Box display="flex" alignItems="center">
                 <Box minWidth={25}>
-                  <Typography variant="body2" color="textSecondary">{project.paid.toPrecision(4)} ETH</Typography>
+                  <Typography variant="body2" color="textSecondary">{project.paid.toPrecision(3)} ETH<br/>Funds released</Typography>
                 </Box>
                 <Box width="100%" mr={2}>
                   <LinearProgress style={{height:10, borderRadius:2}} variant="determinate" value={progress} />
                 </Box>
                 <Box minWidth={25}>
-                  <Typography variant="body2" color="textSecondary">{project.currentBalance} ETH</Typography>
+                  <Typography variant="body2" color="textSecondary">{project.currentBalance.toPrecision(3)} ETH<br/>Funds raised</Typography>
                 </Box>
               </Box>
-              <Checkpoints idx = {index} project = {project} finishButton = {true} handleEndVoting = {this.handleEndVoting}/>
-              <br/>
-              <Button disabled={project.state !== "1" || project.votingState || project.refundVotingState} variant="contained" color="primary" onClick={() => {this.handleCheckpoint(index, project.address)}}>
-                Finish Checkpoint
-              </Button>
+              <Checkpoints idx = {index} project = {project} />
+              <Grid item container xs = {12}  direction="row">
+                <Grid item xs sm>
+                  <Button disabled={project.state !== "1" || project.votingState || project.refundVotingState} variant="contained" color="primary" onClick={() => {this.handleCheckpoint(index, project.address)}}>
+                    Trigger Checkpoint
+                  </Button><br/><br/>
+                  <Button disabled={project.state !== "1" || (!project.votingState && !project.refundVotingState) || project.votingTime > 0 || project.refundVotingTime > 0} variant="contained" color="secondary" onClick={() => {this.handleEndVoting(index, project.address)}}>
+                    End Voting
+                  </Button>
+                </Grid>
+                <Grid item xs sm>
+                </Grid>
+                <Grid item xs sm>
+                  {project.votingState && (<Typography>Voting Ends In:     <VoteTimer value = {project.votingTime} /></Typography>)}
+                  {project.refundVotingState && (<Typography>Voting Ends In:   <VoteTimer value = {project.refundVotingTime} /></Typography>)}
+                </Grid>
+              </Grid>
             </CardContent>
           </Card>
           </Paper>

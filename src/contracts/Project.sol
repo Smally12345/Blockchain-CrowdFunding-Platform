@@ -155,7 +155,7 @@ contract Project{
         voting = new Voting(backers.length);
         voting.trigger();
         bool votingState = voting.state();
-        uint votingTime = voting.votingTime();
+        uint votingTime = voting.RemainingTime();
         emit Trigger(
             votingState,
             votingTime
@@ -222,7 +222,7 @@ contract Project{
         refundVoting = new Voting(backers.length);
         refundVoting.trigger();
         bool refundVotingState = refundVoting.state();
-        uint refundVotingTime = refundVoting.votingTime();
+        uint refundVotingTime = refundVoting.RemainingTime();
         emit Trigger(
             refundVotingState,
             refundVotingTime

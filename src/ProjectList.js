@@ -13,6 +13,7 @@ class ProjectList extends React.Component{
         loading:true,
         address : this.props.address,
         projects: [],
+        fundloading:[]
     }
   }
 
@@ -41,7 +42,8 @@ class ProjectList extends React.Component{
         votingResult : votingData.result,
       }
       this.setState({
-        projects : [...this.state.projects, projectdata]
+        projects : [...this.state.projects, projectdata],
+        fundloading: [...this.state.fundloading, false]
       })
     }
   }
@@ -54,6 +56,11 @@ class ProjectList extends React.Component{
   }
   
   handleFund(projectaddr, idx){
+      let fundloading = [...this.state.fundloading]
+      fundloading[idx] = true
+      this.setState({
+        fundloading
+      })
       const project = ProjectInstance(projectaddr)
       project.methods.contribute().send({
         from: this.state.address,
@@ -68,11 +75,17 @@ class ProjectList extends React.Component{
         project.backers = data.backers
         project.fundingAmt = "0"
         projects[idx] = project
+        fundloading[idx] = false
         this.setState({
-          projects
+          projects,
+          fundloading
         })
       }).catch((err)=>{
         alert(err)
+        fundloading[idx] = false
+        this.setState({
+          fundloading
+        })
       })
       
   }
@@ -104,7 +117,7 @@ class ProjectList extends React.Component{
         }
         
         return(
-          <Grid  item xs = {12} > 
+          <Grid  item xs = {12} key = {index}> 
           <Paper elevation = {2} >
           <Card elevation ={2} variant="outlined" key={index} style={{padding:"20px",boxShadow: "0px 50px 80px 0px rgba(15,19,25,0.1)"}}>
             <CardContent>
@@ -114,20 +127,23 @@ class ProjectList extends React.Component{
               <Typography variant = "body1" style={{marginTop:"2%", marginBottom:"2%"}} >{project.desc}</Typography>
               <Box display="flex" alignItems="center">
                 <Box minWidth={25}>
-                  <Typography variant="body2" color="textSecondary">{project.currentBalance} ETH</Typography>
+                  <Typography variant="body2" color="textSecondary">{project.currentBalance} ETH<br/>Funds raised</Typography>
                 </Box>
                 <Box width="100%" mr={2}>
                   <LinearProgress style={{height:10, borderRadius:2}} variant="determinate" value={progress} />
                 </Box>
                 <Box minWidth={25}>
-                  <Typography variant="body2" color="textSecondary">{project.goal} ETH</Typography>
+                  <Typography variant="body2" color="textSecondary">{project.goal} ETH<br/>Goal</Typography>
                 </Box>
               </Box>
             </CardContent>
             <CardActions>
               <TextField  name = "fundingAmount" variant="outlined" type = "number" label="Amount" InputLabelProps={{shrink: true,}} value={project.fundingAmt} onChange = {(e)=>{this.handleFundChange(index,e)}}/>
-              {(project.state === "0") && <Button size="small" color="primary" variant="contained" onClick={()=>{this.handleFund(project.address,index)}} >Fund</Button>}
-              {(project.state !== "0") && <Button disabled size="small" color="secondary" variant="contained" onClick={()=>{this.handleFund(project.address,index)}} >Fund</Button>}
+              {!this.state.fundloading[index] ?(
+                  <Button disabled = {project.state !== "0"} size="small" color="primary" variant="contained" onClick={()=>{this.handleFund(project.address,index)}} >Fund</Button>
+              ) : (
+                <Button disabled = {project.state !== "0"} size="small" color="primary" variant="contained" onClick={()=>{this.handleFund(project.address,index)}} ><CircularProgress style={{color:"white"}}/></Button>
+              )}
             </CardActions>
           </Card>
           </Paper>

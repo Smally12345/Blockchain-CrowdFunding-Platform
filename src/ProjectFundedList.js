@@ -3,6 +3,7 @@ import ProjectInstance from './contracts/ProjectInstance';
 import CrowdFundInstance from './contracts/CrowdFundInstance';
 import {Box, Grid, Card, CardContent, CardActions, Typography, Button, Paper, Chip, LinearProgress, CircularProgress, FormControlLabel, FormGroup, Checkbox} from '@material-ui/core';
 import Checkpoints from './Checkpoints'
+import VoteTimer from './VoteTimer'
 const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sept", "Oct", "Nov", "Dec"];
 const states = ["Fundraising", "Fundsraised", "Completed", "Expired"]
 const StateColors = ["primary", "secondary","default", "secondary"]
@@ -53,13 +54,13 @@ class ProjectFundedList extends React.Component{
         votingState : votingData.votingState,
         hasVoted: votingData.HasVoted,
         votingResult : votingData.result,
-        votingTime : votingData.votingTime,
+        votingTime : parseInt(votingData.votingTime),
         refundVotingState : refundVotingData.refundVotingState,
         refundHasVoted : refundVotingData.refundHasVoted,
         refundResult : refundVotingData.refundResult,
         refundYesCount : refundVotingData.refundYesCount,
         refundNoCount : refundVotingData.refundNoCount,
-        refundVotingTime : refundVotingData.refundVotingTime,
+        refundVotingTime : parseInt(refundVotingData.refundVotingTime),
         bindex,
       }
       this.setState({
@@ -76,6 +77,57 @@ class ProjectFundedList extends React.Component{
         loading:false
       })
     })
+    this.timerID = setInterval(
+      () => this.tick(),
+      1000
+    );
+  }
+
+
+  componentWillUnmount() {
+    clearInterval(this.timerID);
+  }
+
+  tick() {
+    var projects = [...this.state.projects]
+    projects.forEach(async (project, idx) =>{
+      if(project.votingState){
+        if(project.votingTime === 0){
+          return;
+        }
+        project.votingTime = project.votingTime - 1
+      }
+      else if(project.refundVotingState){
+        if(project.refundVotingTime === 0){
+          return;
+        }
+        project.refundVotingTime = project.refundVotingTime - 1
+      }
+      if(project.votingState === true && project.votingTime === 0){
+        const projectInst = ProjectInstance(project.address)
+        const votingData = await projectInst.methods.getVoteDetails().call()
+          project.votingState = votingData.votingState
+          project.hasVoted = votingData.HasVoted
+          project.votingResult = votingData.result
+          project.yesCount = votingData.YesCount
+          project.noCount = votingData.NoCount
+          project.votingTime = parseInt(votingData.votingTime)
+        }
+        else if(project.refundVotingState === true && project.refundVotingTime === 0){
+          const projectInst = ProjectInstance(project.address)
+          const refundVotingData = await projectInst.methods.getRefundVoteDetails().call()
+          project.refundVotingState = refundVotingData.refundVotingState
+          project.refundHasVoted = refundVotingData.refundHasVoted
+          project.refundResult = refundVotingData.refundResult
+          project.refundYesCount = refundVotingData.refundYesCount
+          project.refundNoCount = refundVotingData.refundNoCount
+          project.refundVotingTime = parseInt(refundVotingData.refundVotingTime)
+        }
+    })
+    this.setState({
+      projects
+    })
+    
   }
 
   handleVote(idx, projectaddr){
@@ -112,7 +164,7 @@ class ProjectFundedList extends React.Component{
           else if(project.votingState === false && project.votingResult === false){
             const triggerdata = res.events.Trigger.returnValues;
             project.refundVotingState = triggerdata.votingState
-            project.refundVotingTime = triggerdata.votingTime
+            project.refundVotingTime = parseInt(triggerdata.votingTime)
           }
           projects[idx] = project
           let checkedY = [...this.state.checkedY]
@@ -205,25 +257,35 @@ class ProjectFundedList extends React.Component{
               <Typography variant = "body1" style={{marginTop:"2%", marginBottom:"2%"}} >{project.desc}</Typography>
               <Box display="flex" alignItems="center">
                 <Box minWidth={25}>
-                  <Typography variant="body2" color="textSecondary">{project.paid.toPrecision(4)} ETH</Typography>
+                  <Typography variant="body2" color="textSecondary">{project.paid.toPrecision(3)} ETH<br/>Funds released</Typography>
                 </Box>
                 <Box width="100%" mr={2}>
                   <LinearProgress style={{height:10, borderRadius:2}} variant="determinate" value={progress} />
                 </Box>
                 <Box minWidth={25}>
-                  <Typography variant="body2" color="textSecondary">{project.currentBalance} ETH</Typography>
+                  <Typography variant="body2" color="textSecondary">{project.currentBalance.toPrecision(3)} ETH<br/>Funds raised </Typography>
                 </Box>
               </Box>
               <Checkpoints idx = {index} project = {project} handleCheckpoint = {this.handleCheckpoint} finishButton = {false}/>
             </CardContent>
             <CardActions>
-              {project.votingState && <><Typography variant = "body1" >Vote to approve completion of checkpoint</Typography><br/></>}
-              {project.refundVotingState && <><Typography variant = "body1" >Vote for termination and refund:</Typography><br/></>}
-              <FormGroup row>
-                <FormControlLabel disabled={(!project.votingState || project.hasVoted[project.bindex]) && (!project.refundVotingState || project.refundHasVoted[project.bindex]) } control={<Checkbox checked={this.state.checkedY[index]} onChange={(e)=>{this.handleChange(index,e)}} name="checkedY" color="primary"/>} label="Yes"/>
-                <FormControlLabel disabled={(!project.votingState || project.hasVoted[project.bindex]) && (!project.refundVotingState || project.refundHasVoted[project.bindex])} control={<Checkbox checked={this.state.checkedN[index]} onChange={(e)=>{this.handleChange(index,e)}} name="checkedN" color="secondary"/>} label="No"/>
-                <Button disabled={(!project.votingState || project.hasVoted[project.bindex]) && (!project.refundVotingState || project.refundHasVoted[project.bindex]) } variant="contained" color="primary" onClick={()=>{this.handleVote(index, project.address)}}>Vote</Button>
-              </FormGroup>
+              <Grid item container xs = {12} sm direction="row">
+                <Grid item xs sm>
+                  {project.votingState && <><Typography variant = "body1" >Vote to approve completion of checkpoint</Typography><br/></>}
+                  {project.refundVotingState && <><Typography variant = "body1" >Vote for termination and refund:</Typography><br/></>}
+                  <FormGroup row>
+                    <FormControlLabel disabled={(!project.votingState || project.hasVoted[project.bindex]) && (!project.refundVotingState || project.refundHasVoted[project.bindex]) } control={<Checkbox checked={this.state.checkedY[index]} onChange={(e)=>{this.handleChange(index,e)}} name="checkedY" color="primary"/>} label="Yes"/>
+                    <FormControlLabel disabled={(!project.votingState || project.hasVoted[project.bindex]) && (!project.refundVotingState || project.refundHasVoted[project.bindex])} control={<Checkbox checked={this.state.checkedN[index]} onChange={(e)=>{this.handleChange(index,e)}} name="checkedN" color="secondary"/>} label="No"/>
+                    <Button disabled={(!project.votingState || project.hasVoted[project.bindex]) && (!project.refundVotingState || project.refundHasVoted[project.bindex]) } variant="contained" color="primary" onClick={()=>{this.handleVote(index, project.address)}}>Vote</Button>
+                  </FormGroup>
+                </Grid>
+                <Grid item xs sm>
+                </Grid>
+                <Grid item xs sm>
+                  {project.votingState && (<Typography>Voting Ends In:     <VoteTimer value = {project.votingTime} /></Typography>)}
+                  {project.refundVotingState && (<Typography>Voting Ends In:   <VoteTimer value = {project.refundVotingTime} /></Typography>)}
+                </Grid>
+              </Grid>
             </CardActions>
           </Card>
           </Paper>
