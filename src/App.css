@@ -1,7 +1,12 @@
 .divJumbotron {
-    background-image: url('./jumbotron.jpeg')!important;
+    /* background-image: url('./jumbotron.jpeg')!important; */
+    background-image: url('./Ethereum.jpg'),linear-gradient(to bottom,#041727 0,#062b3f 100%) ;
     background-repeat: no-repeat;
     background-blend-mode: overlay;
     background-size: 100% 100%;
-    height: 80vh;
+    height: 75vh;
+}
+
+.TabClass{
+    background-color: #041727;
 }

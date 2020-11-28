@@ -55,7 +55,8 @@ contract Project{
     address payable[] public backers;
     Voting public voting;
     Voting public refundVoting;
-    constructor(string memory _title, string memory _desc, uint _goal, uint _deadline, address payable _creator, uint _totalCP) public {
+    string public imgHash;
+    constructor(string memory _title, string memory _desc, uint _goal, uint _deadline, address payable _creator, uint _totalCP, string memory _imgHash) public {
         title = _title;
         desc = _desc;
         deadline = _deadline;
@@ -68,6 +69,7 @@ contract Project{
         TotalCheckpoints = _totalCP;
         voting = new Voting(0);
         refundVoting = new Voting(0);
+        imgHash = _imgHash;
     }
     
     
@@ -85,6 +87,10 @@ contract Project{
         completed_checkpoints = CompletedCheckpoints;
         Paid = paid;
         Backers = backers;
+    }
+    
+    function getImage() external view returns(string memory ImgHash){
+        ImgHash = imgHash;
     }
     
     function getVoteDetails() external view returns(bool votingState, bool[] memory HasVoted, uint YesCount, uint NoCount, bool result, uint votingTime){

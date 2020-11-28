@@ -31,6 +31,11 @@ const abi = [
 				"internalType": "uint256",
 				"name": "_totalCP",
 				"type": "uint256"
+			},
+			{
+				"internalType": "string",
+				"name": "_imgHash",
+				"type": "string"
 			}
 		],
 		"stateMutability": "nonpayable",
@@ -382,6 +387,19 @@ const abi = [
 	},
 	{
 		"inputs": [],
+		"name": "getImage",
+		"outputs": [
+			{
+				"internalType": "string",
+				"name": "ImgHash",
+				"type": "string"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
 		"name": "getRefundVoteDetails",
 		"outputs": [
 			{
@@ -464,6 +482,19 @@ const abi = [
 				"internalType": "uint256",
 				"name": "",
 				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "imgHash",
+		"outputs": [
+			{
+				"internalType": "string",
+				"name": "",
+				"type": "string"
 			}
 		],
 		"stateMutability": "view",

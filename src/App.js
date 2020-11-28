@@ -5,9 +5,16 @@ import ProjectList from './ProjectList';
 import MyProjectList from './MyProjectList';
 import ProjectFundedList from './ProjectFundedList'; 
 import ProjectForm from './ProjectForm';
-import {Grid, CircularProgress, Tabs, Tab, AppBar} from '@material-ui/core';
-
+import {withStyles, Grid, CircularProgress, Tabs, Tab, AppBar, Button, Typography, Divider} from '@material-ui/core';
+import ipfs from './contracts/ipfs';
 import './App.css'
+const styles = theme => ({
+  root: {
+    display: "flex",
+    flexGrow: 1,
+    overflow:"hidden"
+  }
+});
 class App extends React.Component{
   constructor(){
     super()
@@ -15,6 +22,7 @@ class App extends React.Component{
       address : "",
       loading : true,
       tabvalue:0,
+      buffer :"",
     }
     this.CreateProject = this.CreateProject.bind(this);
   }
@@ -31,33 +39,16 @@ class App extends React.Component{
       })
     })
   }
-  CreateProject(data){
+  async CreateProject(data){
     this.setState({
       loading:true,
     })
-    CrowdFundInstance.methods.startProject(data.Title, data.Desc, web3.utils.toWei(data.Goal, 'ether'), data.Deadline, data.Checkpoints).send({from:this.state.address}).then((res)=>{
+    console.log(data)
+    let imgData = await ipfs.add(data.imgBuffer)
+    let ipfsHash = imgData.path
+    CrowdFundInstance.methods.startProject(data.Title, data.Desc, web3.utils.toWei(data.Goal, 'ether'), data.Deadline, data.Checkpoints, ipfsHash).send({from:this.state.address}).then((res)=>{
       alert("Project Created Successfully")
-      // const projectInfo = res.events.ProjectStarted.returnValues;
-      // const projectdata = {
-      //   address : projectInfo.contractAddress,
-      //   title : projectInfo.projectTitle,
-      //   desc : projectInfo.projectDesc,
-      //   goal : projectInfo.goal/ 10**18,
-      //   currentBalance : 0,
-      //   fundingAmt:0,
-      //   state : "0", 
-      //   deadline : new Date(projectInfo.deadline * 1000),
-      //   totalCheckpoints: projectInfo.TotalCheckpoints,
-      //   completedCheckpoints : 0,
-      //   paid : 0,
-      //   backers : [],
-      //   votingState : false,
-      //   hasVoted: [],
-      //   votingResult : false,
-      // }
       this.setState({
-        // projects : [...this.state.projects, projectdata],
-        // projects_started : [...this.state.projects_started, projectdata],
         loading:false
       })
     }).catch(()=>{
@@ -74,28 +65,37 @@ class App extends React.Component{
     })
   }
   
-  
   render(){
+    const {classes} = this.props
     if(this.state.loading ){
       return(
       <center><CircularProgress size={100} style={{marginTop:50}}/></center>
       )
     }
     return(
-      <Grid container style={{width:"100%"}}>
-         <AppBar >
-          <Tabs value={this.state.tabvalue} onChange={this.handleChange}  centered variant="fullWidth">
+      <div className={classes.root}>
+      <Grid container>
+        <Grid xs={12} sm={12} item >
+         <AppBar position="fixed" >
+          <Tabs value={this.state.tabvalue} onChange={this.handleChange} variant="fullWidth" centered className="TabClass">
             <Tab label="All Projects" />
             <Tab label="Projects Started" />
             <Tab label="Projects Funded" />
           </Tabs>
         </AppBar>
-         <Grid container  direction="row" justify = "center" alignItems = "center" spacing={2} className="divJumbotron" style={{paddingTop:"25%"}} >
-            <Grid container  item justify = "center" alignItems = "center" xs = {12} >
-                <ProjectForm address = {this.state.address} CreateProject = {this.CreateProject}/>
-              </Grid>
+        </Grid>
+         <Grid  item container direction="row" justify = "center" alignItems = "center" className="divJumbotron"  >
+            <Grid item style={{marginTop:"15%"}}>
+              <Typography variant="h3" style={{color:"white"}}>CROWDCHAIN</Typography><br/>
+              <center><Typography variant="subtitle1" style={{color:"white"}}>Ethereum based CrowdFunding Platform</Typography></center>
+            </Grid>
+            <Grid container item justify = "center" alignItems = "center" xs = {12} >
+              <ProjectForm address = {this.state.address} CreateProject = {this.CreateProject}/>
+            </Grid>
+          </Grid>
+          <Grid item container style={{marginTop:"7%"}}>
             {(this.state.tabvalue === 0) && 
-              <Grid container item  justify = "center" alignItems = "center"  xs = {12} spacing={5} >
+              <Grid container item xs = {12} justify = "center" alignItems = "center">
                 <ProjectList address = {this.state.address} />
               </Grid>
             }
@@ -109,10 +109,11 @@ class App extends React.Component{
                 <ProjectFundedList address = {this.state.address}/>
               </Grid>
             }
-          </Grid> 
+          </Grid>
         </Grid>
+        </div>
     )
   }
 
 }
-export default App;
+export default withStyles(styles)(App);
