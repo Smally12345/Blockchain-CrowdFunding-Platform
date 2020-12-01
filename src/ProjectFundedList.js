@@ -1,31 +1,50 @@
 import React from 'react';
-import ProjectInstance from './contracts/ProjectInstance';
 import CrowdFundInstance from './contracts/CrowdFundInstance';
-import {Box, Grid, Card, CardContent, CardActions, Typography, Button, Paper, Chip, LinearProgress, CircularProgress, FormControlLabel, FormGroup, Checkbox} from '@material-ui/core';
-import Checkpoints from './Checkpoints'
-import VoteTimer from './VoteTimer'
+import ProjectInstance from './contracts/ProjectInstance';
+import {withStyles, Divider, Grid, Card, CardContent, CardActionArea,CardHeader,CardMedia,Typography,  Button, CircularProgress, Collapse} from '@material-ui/core';
+import {Link} from 'react-router-dom';
 const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sept", "Oct", "Nov", "Dec"];
-const states = ["Fundraising", "Fundsraised", "Completed", "Expired"]
-const StateColors = ["primary", "secondary","default", "secondary"]
+// const states = ["Fundraising", "Fundsraised", "Completed", "Expired"]
+// const StateColors = ["primary", "secondary","default", "secondary"]
+const styles = theme => ({
+  root: {
+    maxWidth: 400,
+    height:"100%",
+    boxShadow: "30px 50px 80px 30px rgba(15,19,25,0.1)"
+  },
+  media: {
+    height: 0,
+    paddingTop: '56.25%', // 16:9
+  },
+  divider: {
+    width:"50%",
+  },
+  dividerTwo: {
+    width:"50%",
+    height:5,
+    color:"black"
+  }
+});
+var ipfsurl = "https://ipfs.io/ipfs/"
 class ProjectFundedList extends React.Component{
   constructor(props){
     super(props)
     this.state ={
-        loading : true,
+        loading:true,
         address : this.props.address,
         projects: [],
-        checkedY : [],
-        checkedN : [],
+        expanded:[],
     }
   }
 
   async load(){
+    this.setState({loading:true})
     const arr = await CrowdFundInstance.methods.returnAllProjects().call()
+    
     for(var i = 0; i < arr.length; i++){
       const project = ProjectInstance(arr[i])
       const data = await project.methods.getDetails().call()
       var bindex = -1
-      console.log(data.Backers)
       for(var j = 0; j < data.Backers.length; j++){
         if(data.Backers[j] === this.state.address){
           bindex = j
@@ -35,8 +54,7 @@ class ProjectFundedList extends React.Component{
       if(bindex === -1){
         continue
       }
-      const votingData = await project.methods.getVoteDetails().call()
-      const refundVotingData = await project.methods.getRefundVoteDetails().call()
+      const imgHash = await project.methods.getImage().call()
       const projectdata = {
         address : arr[i],
         creator : data.Creator,
@@ -44,32 +62,20 @@ class ProjectFundedList extends React.Component{
         desc : data.ProjectDesc,
         goal : data.AmountGoal/ 10**18,
         currentBalance : data.CurrentBal/ 10**18,
-        fundingAmt:0,
         state :data.CurrentState,
         deadline : new Date(data.Deadline * 1000),
         totalCheckpoints : data.total_checkpoints,
         completedCheckpoints : data.completed_checkpoints,
         paid : data.Paid / 10**18,
         backers : data.Backers,
-        votingState : votingData.votingState,
-        hasVoted: votingData.HasVoted,
-        votingResult : votingData.result,
-        votingTime : parseInt(votingData.votingTime),
-        refundVotingState : refundVotingData.refundVotingState,
-        refundHasVoted : refundVotingData.refundHasVoted,
-        refundResult : refundVotingData.refundResult,
-        refundYesCount : refundVotingData.refundYesCount,
-        refundNoCount : refundVotingData.refundNoCount,
-        refundVotingTime : parseInt(refundVotingData.refundVotingTime),
-        bindex,
+        imgHash : imgHash,
       }
       this.setState({
         projects : [...this.state.projects, projectdata],
-        checkedY : [...this.state.checkedY, false],
-        checkedN : [...this.state.checkedN, false],
+        expanded: [...this.state.expanded, false]
       })
+      
     }
-    
   }
   componentDidMount(){
       this.load().then(()=>{
@@ -77,224 +83,73 @@ class ProjectFundedList extends React.Component{
         loading:false
       })
     })
-    this.timerID = setInterval(
-      () => this.tick(),
-      1000
-    );
-  }
-
-
-  componentWillUnmount() {
-    clearInterval(this.timerID);
-  }
-
-  tick() {
-    var projects = [...this.state.projects]
-    projects.forEach(async (project, idx) =>{
-      if(project.votingState){
-        if(project.votingTime === 0){
-          return;
-        }
-        project.votingTime = project.votingTime - 1
-      }
-      else if(project.refundVotingState){
-        if(project.refundVotingTime === 0){
-          return;
-        }
-        project.refundVotingTime = project.refundVotingTime - 1
-      }
-      if(project.votingState === true && project.votingTime === 0){
-        const projectInst = ProjectInstance(project.address)
-        const votingData = await projectInst.methods.getVoteDetails().call()
-          project.votingState = votingData.votingState
-          project.hasVoted = votingData.HasVoted
-          project.votingResult = votingData.result
-          project.yesCount = votingData.YesCount
-          project.noCount = votingData.NoCount
-          project.votingTime = parseInt(votingData.votingTime)
-        }
-        else if(project.refundVotingState === true && project.refundVotingTime === 0){
-          const projectInst = ProjectInstance(project.address)
-          const refundVotingData = await projectInst.methods.getRefundVoteDetails().call()
-          project.refundVotingState = refundVotingData.refundVotingState
-          project.refundHasVoted = refundVotingData.refundHasVoted
-          project.refundResult = refundVotingData.refundResult
-          project.refundYesCount = refundVotingData.refundYesCount
-          project.refundNoCount = refundVotingData.refundNoCount
-          project.refundVotingTime = parseInt(refundVotingData.refundVotingTime)
-        }
-    })
-    this.setState({
-      projects
-    })
-    
-  }
-
-  handleVote(idx, projectaddr){
-      const project = ProjectInstance(projectaddr)
-      var choice;
-      if(this.state.checkedY[idx] && !this.state.checkedN[idx]){
-        choice = true
-      }
-      else if(this.state.checkedN[idx] && !this.state.checkedY[idx]){
-        choice = false
-      }
-      else{
-        alert("Choose one option")
-        return;
-      }
-      if(this.state.projects[idx].votingState === true){
-        project.methods.Vote(choice, this.state.projects[idx].bindex).send({
-          from: this.state.address,
-        }).then((res)=>{
-          alert("vote success")
-          let projects = [...this.state.projects]
-          let project = {...this.state.projects[idx]}
-          const data = res.events.VoteEvent.returnValues;
-          project.votingState = data.votingState
-          project.hasVoted = data.HasVoted
-          project.votingResult = data.result
-          if(project.votingState === false && project.votingResult === true){
-            const checkpointdata = res.events.Checkpoint.returnValues;
-            console.log(checkpointdata)
-            project.paid = checkpointdata.paid/ 10**18
-            project.completedCheckpoints = checkpointdata.CompletedCheckpoints
-            project.state = checkpointdata.state
-          }
-          else if(project.votingState === false && project.votingResult === false){
-            const triggerdata = res.events.Trigger.returnValues;
-            project.refundVotingState = triggerdata.votingState
-            project.refundVotingTime = parseInt(triggerdata.votingTime)
-          }
-          projects[idx] = project
-          let checkedY = [...this.state.checkedY]
-          checkedY[idx] = false
-          let checkedN = [...this.state.checkedN]
-          checkedN[idx] = false
-          this.setState({
-            projects,
-            checkedY,
-            checkedN
-          })
-        }).catch((err)=>{
-          alert(err)
+    window.ethereum.on('accountsChanged',  (accounts)=> {
+      this.load().then(()=>{
+        this.setState({
+          loading:false,
         })
-      }
-      else if(this.state.projects[idx].refundVotingState === true){
-        project.methods.refundVote(choice, this.state.projects[idx].bindex).send({
-          from: this.state.address,
-        }).then((res)=>{
-          alert("vote success")
-          let projects = [...this.state.projects]
-          let project = {...this.state.projects[idx]}
-          const data = res.events.VoteEvent.returnValues;
-          project.refundVotingState = data.votingState
-          project.refundHasVoted = data.HasVoted
-          project.refundResult = data.result
-          if(project.refundVotingState === false && project.refundResult === true){
-            const refunddata = res.events.Refund.returnValues;
-            project.paid = refunddata.Paid/ 10**18
-            project.currentBalance = refunddata.Currentbalance
-            project.state = refunddata.state
-          }
-          projects[idx] = project
-          this.setState({
-            projects
-          })
-        }).catch((err)=>{
-          alert(err)
-        })
-      }
-      
-  }
-
-  handleChange = (idx, e) => {
-    if (e.target.name === "checkedY"){
-      let checkedY = [...this.state.checkedY]
-      checkedY[idx] = e.target.checked
-      this.setState({
-        checkedY
       })
-    }
-    else{
-      let checkedN = [...this.state.checkedN]
-      checkedN[idx] = e.target.checked
-      this.setState({
-        checkedN
-      })
-    }
+    })
     
   }
   
+  
+
+  handleExpanded = (idx)=>{
+    let expanded = [...this.state.expanded]
+    expanded[idx] = !expanded[idx]
+    this.setState({expanded})
+  }
+  
   render(){
+    const { classes } = this.props;
     if(this.state.loading ){
       return(
         <center><CircularProgress size={50} style={{marginTop:50}}/></center>
       )
     }
     return(
-      <>{this.state.projects.map((project,index) => {
+      
+      <Grid container direction="row" wrap="wrap" spacing={6}>
+      {this.state.projects.map((project,index) => {
         const day = this.state.projects[index].deadline.getDate().toString()
         const month = months[this.state.projects[index].deadline.getMonth()]
         const year = this.state.projects[index].deadline.getFullYear().toString()
         const date = day + " " + month + " " + year
-        var progress = (project.paid/project.currentBalance) * 100
+        var progress = (project.currentBalance/project.goal) * 100
         if(progress > 100){
           progress = 100
         }
-        if(project.state === "0" || project.state === "3"){
-          progress = 0
-        }
-
+        
         return(
-          <Grid  item xs = {12} > 
-          <Paper elevation = {2} >
-          <Card elevation ={2} variant="outlined" key={index} style={{padding:"20px",boxShadow: "0px 50px 80px 0px rgba(15,19,25,0.1)"}}>
-            <CardContent>
-              <Chip label={states[project.state]} color={StateColors[project.state]} />
-              <Typography style={{float:"right"}}>Deadline: {date} </Typography>
-              <center><Typography variant = "h4">{project.title}</Typography></center>
-              <Typography variant = "body1" style={{marginTop:"2%", marginBottom:"2%"}} >{project.desc}</Typography>
-              <Box display="flex" alignItems="center">
-                <Box minWidth={25}>
-                  <Typography variant="body2" color="textSecondary">{project.paid.toPrecision(3)} ETH<br/>Funds released</Typography>
-                </Box>
-                <Box width="100%" mr={2}>
-                  <LinearProgress style={{height:10, borderRadius:2}} variant="determinate" value={progress} />
-                </Box>
-                <Box minWidth={25}>
-                  <Typography variant="body2" color="textSecondary">{project.currentBalance.toPrecision(3)} ETH<br/>Funds raised </Typography>
-                </Box>
-              </Box>
-              <Checkpoints idx = {index} project = {project} handleCheckpoint = {this.handleCheckpoint} finishButton = {false}/>
-            </CardContent>
-            <CardActions>
-              <Grid item container xs = {12} sm direction="row">
-                <Grid item xs sm>
-                  {project.votingState && <><Typography variant = "body1" >Vote to approve completion of checkpoint</Typography><br/></>}
-                  {project.refundVotingState && <><Typography variant = "body1" >Vote for termination and refund:</Typography><br/></>}
-                  <FormGroup row>
-                    <FormControlLabel disabled={(!project.votingState || project.hasVoted[project.bindex]) && (!project.refundVotingState || project.refundHasVoted[project.bindex]) } control={<Checkbox checked={this.state.checkedY[index]} onChange={(e)=>{this.handleChange(index,e)}} name="checkedY" color="primary"/>} label="Yes"/>
-                    <FormControlLabel disabled={(!project.votingState || project.hasVoted[project.bindex]) && (!project.refundVotingState || project.refundHasVoted[project.bindex])} control={<Checkbox checked={this.state.checkedN[index]} onChange={(e)=>{this.handleChange(index,e)}} name="checkedN" color="secondary"/>} label="No"/>
-                    <Button disabled={(!project.votingState || project.hasVoted[project.bindex]) && (!project.refundVotingState || project.refundHasVoted[project.bindex]) } variant="contained" color="primary" onClick={()=>{this.handleVote(index, project.address)}}>Vote</Button>
-                  </FormGroup>
-                </Grid>
-                <Grid item xs sm>
-                </Grid>
-                <Grid item xs sm>
-                  {project.votingState && (<Typography>Voting Ends In:     <VoteTimer value = {project.votingTime} /></Typography>)}
-                  {project.refundVotingState && (<Typography>Voting Ends In:   <VoteTimer value = {project.refundVotingTime} /></Typography>)}
-                </Grid>
-              </Grid>
-            </CardActions>
+          <Grid item key = {index}  xs={12} sm={4}>
+          <Card className={classes.root}>
+            <CardActionArea component={Link} to={`/project/${project.address}`}>
+              <CardMedia
+                className={classes.media}
+                image= {ipfsurl.concat(project.imgHash)}
+              />
+              <CardHeader
+                title={project.title}
+                subheader={`Deadline: ${date}`}
+              />
+            </CardActionArea>
+            <Divider variant="middle" className={classes.divider}/>
+            <Button onClick={()=>{this.handleExpanded(index)}}>See Description</Button>
+            <Collapse in={this.state.expanded[index]} timeout="auto" unmountOnExit>
+              <CardContent>
+                <Typography variant="body2" color="textSecondary" align="left" component="p">
+                  {project.desc}
+                </Typography>
+              </CardContent>
+            </Collapse>
           </Card>
-          </Paper>
           </Grid>
         )
       })}
-    </>
+    </Grid>
   )
   }
 
 }
-export default ProjectFundedList;
+export default withStyles(styles)(ProjectFundedList);

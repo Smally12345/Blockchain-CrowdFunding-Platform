@@ -5,7 +5,7 @@ import ProjectList from './ProjectList';
 import MyProjectList from './MyProjectList';
 import ProjectFundedList from './ProjectFundedList'; 
 import ProjectForm from './ProjectForm';
-import {withStyles, Grid, CircularProgress, Tabs, Tab, AppBar, Button, Typography, Divider} from '@material-ui/core';
+import {withStyles, Grid, CircularProgress, Tabs, Tab, AppBar, Typography} from '@material-ui/core';
 import ipfs from './contracts/ipfs';
 import './App.css'
 const styles = theme => ({
@@ -95,17 +95,17 @@ class App extends React.Component{
           </Grid>
           <Grid item container style={{marginTop:"7%"}}>
             {(this.state.tabvalue === 0) && 
-              <Grid container item xs = {12} justify = "center" alignItems = "center">
+              <Grid container item xs = {12} sm={12} >
                 <ProjectList address = {this.state.address} />
               </Grid>
             }
             {(this.state.tabvalue === 1) && 
-              <Grid container item justify = "center" alignItems = "center" xs = {12} spacing={5} >
+              <Grid container item xs = {12} sm={12}  >
                 <MyProjectList address = {this.state.address} />
               </Grid>
             }
             {(this.state.tabvalue === 2) && 
-              <Grid container item justify = "center" alignItems = "center" xs = {12} spacing={5} >
+              <Grid container item xs = {12} sm={12}  >
                 <ProjectFundedList address = {this.state.address}/>
               </Grid>
             }

@@ -1,4 +1,0 @@
-
-TODO:
-1) Deadline text mobile- SC and UI
-2) homepage (optional)
